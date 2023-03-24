@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package replicateddatabase;
+
+message ArgsVote {
+    string message = 1;
+} 
+
+message RetVote {
+    bool response = 1;
+} 
+
+message ArgsLog {
+    string message = 1;
+}
+
+message RetLog {
+    bool response = 1;
+}
+
+service ElectionBook {
+    rpc RequestVote(ArgsVote) returns (RetVote) {}
+}
+
+service LogBook {
+    rpc AppendEntries(ArgsLog) returns (RetLog) {}
+}
