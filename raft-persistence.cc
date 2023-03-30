@@ -12,7 +12,7 @@ LogPersistence::LogPersistence(const std::filesystem::path &homeDir) {
 
 void LogPersistence::appendLog(const LogEntry &logEntry) {
 	// TODO: Add tokens 
-  std::lock_guard(logLock);
+  std::lock_guard _(logLock);
   logFs.clear();
   logFs.seekg(0, std::ios::end);
   logFs << logEntry.getString() << "\n";
@@ -24,7 +24,7 @@ inline void LogPersistence::seekToLogIndex(uint logIndex) {
 }
 
 std::optional<LogEntry> LogPersistence::readLog(uint logIndex) {
-  std::lock_guard(logLock);
+  std::lock_guard _(logLock);
   seekToLogIndex(logIndex);
   std::string line;
   if (std::getline(logFs, line))
@@ -34,7 +34,7 @@ std::optional<LogEntry> LogPersistence::readLog(uint logIndex) {
 }
 
 std::vector<LogEntry> LogPersistence::readLogRange(uint start, uint end) {
-  std::lock_guard(logLock);
+  std::lock_guard _(logLock);
   seekToLogIndex(start);
   std::vector<LogEntry> logEntries;
   std::string line;
@@ -45,19 +45,19 @@ std::vector<LogEntry> LogPersistence::readLogRange(uint start, uint end) {
 
 void LogPersistence::writeLog(uint logIndex, const LogEntry &logEntry) {
 	// TODO: Make a wrapper that ensures you don't call this when leader
-  std::lock_guard(logLock);
+  std::lock_guard _(logLock);
   seekToLogIndex(logIndex);
   logFs << logEntry.getString() << std::endl;
 }
 
 std::optional<uint> LogPersistence::readLastCommitIndex() {
   {
-    std::shared_lock(lastCommitIndexLock);
+    std::shared_lock _(lastCommitIndexLock);
     if (lastCommitIndexCache != std::numeric_limits<uint>::max())
       return lastCommitIndexCache;
   }
   {
-    std::unique_lock(lastCommitIndexLock);
+    std::unique_lock _(lastCommitIndexLock);
     if (lastCommitIndexFs >> lastCommitIndexCache)
       return lastCommitIndexCache;
     assertm(bool(lastCommitIndexFs), "Bhai read fail ho gaya!!");
@@ -82,12 +82,12 @@ ElectionPersistence::ElectionPersistence(const std::filesystem::path &homeDir,
 
 uint ElectionPersistence::getTerm() {
   {
-    std::shared_lock(termLock);
+    std::shared_lock _(termLock);
     if (termCache != std::numeric_limits<uint>::max())
       return termCache;
   }
   {
-    std::unique_lock(termLock);
+    std::unique_lock _(termLock);
     {
       std::ifstream ifs(termFsPath);
 			assertm(bool(ifs), "Bhai file khula nahi, term wala");
@@ -105,7 +105,7 @@ uint ElectionPersistence::getTerm() {
 }
 
 std::optional<uint> ElectionPersistence::getVotedFor() {
-  std::shared_lock(votedForLock);
+  std::shared_lock _(votedForLock);
   std::ifstream ifs(votedForFsPath);
 	assertm(bool(ifs), "Bhai file khula nahi, voted for wala");
   uint votedFor;
@@ -117,7 +117,7 @@ std::optional<uint> ElectionPersistence::getVotedFor() {
 
 uint ElectionPersistence::writeVotedFor(uint machineId) {
   assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
-  std::unique_lock(votedForLock);
+  std::unique_lock _(votedForLock);
   std::fstream fs(votedForFsPath, std::ios::in | std::ios::out | std::ios::ate);
 	assertm(bool(fs), "Bhai file khula nahi, voted for wala");
 	if(fs.tellg() == 0) { // file size
