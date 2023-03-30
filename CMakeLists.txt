@@ -15,6 +15,7 @@ set(COMPILE_FEATURES cxx_std_20)
 set(COMPILE_OPTIONS -Wall -Wextra -g3 -pedantic)
 
 add_subdirectory(proto)
+add_subdirectory(test)
 
 set(SERVER_EXECUTABLE_NAME raft-service)
 add_executable(${SERVER_EXECUTABLE_NAME} raft.cc)

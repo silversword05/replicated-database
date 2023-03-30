@@ -40,7 +40,7 @@ public:
   std::vector<LogEntry> readLogRange(int, int);
   void writeLog(int, const LogEntry &);
   uint readLastCommitIndex();
-  void increaseVote(uint, uint); // index, machineId;
+  void markLogSyncBit(uint, uint); // index, machineId;
   ~LogPersistence();
 
 private:
@@ -48,8 +48,8 @@ private:
   std::fstream lastCommitIndexFs;
   std::recursive_mutex logLock;
   std::shared_mutex lastCommitIndexLock;
-  std::unordered_map<uint, uint> logVoteBits; // index, voteBits
-  uint lastCommitIndexCache{-1};              // just cache
+  std::unordered_map<uint, std::pair<uint, uint>> logSyncTokens; // index, <voteBits, token>
+  uint lastCommitIndexCache{std::numeric_limits<uint>::max()};              // just cache
 };
 
 class ElectionPersistence {
@@ -67,7 +67,7 @@ private:
   std::filesystem::path votedForFsPath;
   std::shared_mutex termLock;
   std::shared_mutex votedForLock;
-  uint termCache{-1}; // just cache
+  uint termCache{std::numeric_limits<uint>::max()}; // just cache
   uint selfId;
 };
 
