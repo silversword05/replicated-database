@@ -5,14 +5,16 @@
 #define assertm(exp, msg) assert(((void)msg, exp))
 
 constexpr uint intWidth = 4;
+constexpr uint memberVariableLog = 5;
 constexpr uint machineCount = 5;
 constexpr uint termStart = 1;
 
 struct LogEntry {
   uint term;
-  uint index;
-  int key;
-  int val;
+  uint key;
+  uint val;
+  uint clientId;
+  uint reqNo;
 
   std::string getString() const {
     std::stringstream ss;
@@ -20,7 +22,7 @@ struct LogEntry {
 
     [&](auto... args) {
       ([&] { ss << std::setw(intWidth) << args; }(), ...);
-    }(term, index, key, val);
+    }(term, key, val, clientId, reqNo);
     return ss.str();
   }
 
@@ -30,7 +32,7 @@ struct LogEntry {
     [&](auto &...args) {
       int i = 0;
       ([&] { args = std::stoi(line.substr(i++ * intWidth, intWidth)); }(), ...);
-    }(term, index, key, val);
+    }(term, key, val, clientId, reqNo);
 
     return *this;
   }
@@ -38,13 +40,16 @@ struct LogEntry {
 
 class LogPersistence {
 public:
-  LogPersistence(const std::filesystem::path &); // accepts home directory path
+  LogPersistence(const std::filesystem::path &,
+                 uint); // accepts home directory path
   inline void seekToLogIndex(uint);
+  inline int getLastLogIndex();
   void appendLog(const LogEntry &);
   std::optional<LogEntry> readLog(uint); // log index
   std::vector<LogEntry> readLogRange(uint, uint);
-  void writeLog(uint, const LogEntry &);
-  std::optional<uint> readLastCommitIndex();
+  std::optional<LogEntry> writeLog(uint, const LogEntry &, int);
+  void incrementLastCommitIndex(uint);
+  int readLastCommitIndex();
   void markLogSyncBit(uint, uint); // index, machineId;
   ~LogPersistence() = default;
 
@@ -54,9 +59,10 @@ private:
   std::recursive_mutex logLock;
   std::recursive_mutex syncLock; // should be taken before last commit lock
   std::shared_mutex lastCommitIndexLock;
-  std::unordered_map<uint, std::pair<std::bitset<machineCount>, uint>>
-      logSyncTokens; // index, <voteBits, token>
-  uint lastCommitIndexCache{std::numeric_limits<uint>::max()}; // just cache
+  std::unordered_map<uint, std::bitset<machineCount>>
+      logSync;                  // index, majorityBits
+  int lastCommitIndexCache{-1}; // just cache
+  uint selfId;
 };
 
 class ElectionPersistence {

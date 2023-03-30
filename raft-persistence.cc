@@ -1,6 +1,8 @@
 #include <raft-persistence.h>
 
-LogPersistence::LogPersistence(const std::filesystem::path &homeDir) {
+LogPersistence::LogPersistence(const std::filesystem::path &homeDir,
+                               uint selfId_)
+    : selfId(selfId_) {
   logFs = std::fstream(homeDir / "log.txt", std::ios::app);
   logFs = std::fstream(homeDir / "log.txt",
                        std::ios::in | std::ios::out | std::ios::ate);
@@ -8,19 +10,27 @@ LogPersistence::LogPersistence(const std::filesystem::path &homeDir) {
   lastCommitIndexFs =
       std::fstream(homeDir / "commit-index.txt",
                    std::ios::in | std::ios::out | std::ios::ate);
+  readLastCommitIndex();
 }
 
 void LogPersistence::appendLog(const LogEntry &logEntry) {
-	// TODO: Add tokens 
   std::lock_guard _(logLock);
   logFs.clear();
   logFs.seekg(0, std::ios::end);
-  logFs << logEntry.getString() << "\n";
+  logFs << logEntry.getString() << std::endl;
+  markLogSyncBit(getLastLogIndex() , selfId);
 }
 
 inline void LogPersistence::seekToLogIndex(uint logIndex) {
+  std::lock_guard _(logLock);
   logFs.clear(); // to make sure that reset eof bit if previously set
-  logFs.seekg(logIndex * (4 * intWidth + 1), std::ios::beg);
+  logFs.seekg(logIndex * (memberVariableLog * intWidth + 1), std::ios::beg);
+}
+
+inline int LogPersistence::getLastLogIndex() {
+  std::lock_guard _(logLock);
+  logFs.seekg(0, std::ios::end);
+  return (logFs.tellg() / (memberVariableLog * intWidth + 1)) - 1 ;
 }
 
 std::optional<LogEntry> LogPersistence::readLog(uint logIndex) {
@@ -43,32 +53,56 @@ std::vector<LogEntry> LogPersistence::readLogRange(uint start, uint end) {
   return logEntries;
 }
 
-void LogPersistence::writeLog(uint logIndex, const LogEntry &logEntry) {
-	// TODO: Make a wrapper that ensures you don't call this when leader
+std::optional<LogEntry> LogPersistence::writeLog(uint logIndex, const LogEntry &logEntry,
+                              int lastCommitIndex) {
+  // TODO: Make a wrapper that ensures you don't call this when leader
   std::lock_guard _(logLock);
+  auto oldLogEntry = readLog(logIndex);
+  if(oldLogEntry)
+    assertm(oldLogEntry.value().term <= logEntry.term, "Bhai old term higher than new log entry");
   seekToLogIndex(logIndex);
   logFs << logEntry.getString() << std::endl;
+  incrementLastCommitIndex(lastCommitIndex);
+  return oldLogEntry;
 }
 
-std::optional<uint> LogPersistence::readLastCommitIndex() {
+int LogPersistence::readLastCommitIndex() {
   {
     std::shared_lock _(lastCommitIndexLock);
-    if (lastCommitIndexCache != std::numeric_limits<uint>::max())
+    if (lastCommitIndexCache != -1)
       return lastCommitIndexCache;
   }
   {
     std::unique_lock _(lastCommitIndexLock);
+    lastCommitIndexFs.clear();
+    lastCommitIndexFs.seekg(0, std::ios::beg);
     if (lastCommitIndexFs >> lastCommitIndexCache)
       return lastCommitIndexCache;
     assertm(bool(lastCommitIndexFs), "Bhai read fail ho gaya!!");
-    return {};
+    lastCommitIndexCache = -1;
+    return lastCommitIndexCache;
   }
 }
 
 void LogPersistence::markLogSyncBit(uint logIndex, uint machineId) {
-    assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
-    throw "Not implemented";
-		// TODO: Make sure you add tokens in append log
+  assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
+  std::lock_guard _(syncLock);
+  auto& majorityVote = logSync[logIndex];
+  assertm(majorityVote.test(machineId), "Boss kyu bhej rahe ho dubara");
+  majorityVote.set(machineId);
+  if(majorityVote.count() == (machineCount / 2 + 1))
+    incrementLastCommitIndex(logIndex);
+}
+
+void LogPersistence::incrementLastCommitIndex(uint lastCommitIndex) {
+  std::unique_lock _(lastCommitIndexLock);
+  if(lastCommitIndex == lastCommitIndexCache) return;
+  assertm(lastCommitIndex == lastCommitIndexCache + 1,
+          "Bhai commit index me garbar he");
+  lastCommitIndexFs.clear();
+  lastCommitIndexFs.seekg(0, std::ios::beg);
+  lastCommitIndexFs << lastCommitIndex;
+  lastCommitIndexCache = lastCommitIndex;
 }
 
 ElectionPersistence::ElectionPersistence(const std::filesystem::path &homeDir,
@@ -90,7 +124,7 @@ uint ElectionPersistence::getTerm() {
     std::unique_lock _(termLock);
     {
       std::ifstream ifs(termFsPath);
-			assertm(bool(ifs), "Bhai file khula nahi, term wala");
+      assertm(bool(ifs), "Bhai file khula nahi, term wala");
       if (ifs >> termCache)
         return termCache;
       assertm(bool(ifs), "Bhai read fail ho gaya!!");
@@ -107,7 +141,7 @@ uint ElectionPersistence::getTerm() {
 std::optional<uint> ElectionPersistence::getVotedFor() {
   std::shared_lock _(votedForLock);
   std::ifstream ifs(votedForFsPath);
-	assertm(bool(ifs), "Bhai file khula nahi, voted for wala");
+  assertm(bool(ifs), "Bhai file khula nahi, voted for wala");
   uint votedFor;
   if (ifs >> votedFor)
     return votedFor;
@@ -119,12 +153,12 @@ uint ElectionPersistence::writeVotedFor(uint machineId) {
   assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
   std::unique_lock _(votedForLock);
   std::fstream fs(votedForFsPath, std::ios::in | std::ios::out | std::ios::ate);
-	assertm(bool(fs), "Bhai file khula nahi, voted for wala");
-	if(fs.tellg() == 0) { // file size
-		fs << machineId;
-		return machineId;
-	}
-	int machineIdVoted;
-	fs >> machineIdVoted;
-	return machineIdVoted;
+  assertm(bool(fs), "Bhai file khula nahi, voted for wala");
+  if (fs.tellg() == 0) { // file size
+    fs << machineId;
+    return machineId;
+  }
+  int machineIdVoted;
+  fs >> machineIdVoted;
+  return machineIdVoted;
 }
