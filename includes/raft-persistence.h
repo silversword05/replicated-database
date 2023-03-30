@@ -1,8 +1,9 @@
+#pragma once
+
 #include <bits/stdc++.h>
 
 #define assertm(exp, msg) assert(((void)msg, exp))
 
-namespace persist {
 constexpr uint intWidth = 4;
 
 struct LogEntry {
@@ -11,7 +12,7 @@ struct LogEntry {
   int key;
   int val;
 
-  std::string getString() {
+  std::string getString() const {
     std::stringstream ss;
     ss << std::setfill('0');
 
@@ -35,11 +36,11 @@ class LogPersistence {
 public:
   LogPersistence(const std::filesystem::path &); // accepts home directory path
   void appendLog(const LogEntry &);
-  LogEntry readLog(int); // log index
+  std::optional<LogEntry> readLog(int); // log index
   std::vector<LogEntry> readLogRange(int, int);
   void writeLog(int, const LogEntry &);
   uint readLastCommitIndex();
-  void writeLastCommitIndex(uint);
+  void increaseVote(uint, uint); // index, machineId;
   ~LogPersistence();
 
 private:
@@ -47,18 +48,18 @@ private:
   std::fstream lastCommitIndexFs;
   std::recursive_mutex logLock;
   std::shared_mutex lastCommitIndexLock;
-  std::unordered_map<uint, uint> logVoteCount; // index, voteCount
-  uint lastCommitIndexCache{-1};               // just cache
+  std::unordered_map<uint, uint> logVoteBits; // index, voteBits
+  uint lastCommitIndexCache{-1};              // just cache
 };
 
 class ElectionPersistence {
   ElectionPersistence(const std::filesystem::path &,
                       uint); // accepts home directory path and selfId
   uint getTerm();
-  void writeTerm(uint);
+  virtual void incrementTerm() = 0;
   uint getVotedFor();
   void writeVotedFor(uint);
-  void incrementTermAndSelfVote();
+  virtual void incrementTermAndSelfVote() = 0;
   ~ElectionPersistence();
 
 private:
@@ -70,4 +71,11 @@ private:
   uint selfId;
 };
 
-} // namespace persist
+class Raft final : public ElectionPersistence, public LogPersistence {
+  Raft(const std::filesystem::path &, uint);
+  void incrementTerm();
+  void incrementTermAndSelfVote();
+  void addStopToken(std::stop_token);
+private:
+  std::vector<std::stop_token> stopTokens;
+};
