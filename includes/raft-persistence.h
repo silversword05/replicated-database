@@ -69,25 +69,25 @@ class ElectionPersistence {
   ElectionPersistence(const std::filesystem::path &,
                       uint); // accepts home directory path and selfId
   uint getTerm();
-  virtual void incrementTerm() = 0; // clear votedFor
+  void setTermAndSetVote(uint, uint);
+  bool incrementTermAndSelfVote(uint);
   std::optional<uint> getVotedFor();
   uint writeVotedFor(uint);
-  virtual void incrementTermAndSelfVote() = 0;
-  virtual ~ElectionPersistence() = default;
+  ~ElectionPersistence() = default;
 
 private:
+  void writeTermAndVote(uint, uint);
+
   std::filesystem::path termFsPath;
   std::filesystem::path votedForFsPath;
   std::shared_mutex termLock;
-  std::shared_mutex votedForLock;
-  uint termCache{std::numeric_limits<uint>::max()}; // just cache
+  std::recursive_mutex votedForLock;
+  uint termCache{0}; // just cache
   uint selfId;
 };
 
 class Raft final : public ElectionPersistence, public LogPersistence {
   Raft(const std::filesystem::path &, uint);
-  void incrementTermAndClearVote();
-  void incrementTermAndSelfVote();
   void addStopToken(const std::stop_token &);
   ~Raft(); // call stop on stopTokens, clear vote
 

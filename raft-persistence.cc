@@ -18,7 +18,7 @@ void LogPersistence::appendLog(const LogEntry &logEntry) {
   logFs.clear();
   logFs.seekg(0, std::ios::end);
   logFs << logEntry.getString() << std::endl;
-  markLogSyncBit(getLastLogIndex() , selfId);
+  markLogSyncBit(getLastLogIndex(), selfId);
 }
 
 inline void LogPersistence::seekToLogIndex(uint logIndex) {
@@ -30,7 +30,7 @@ inline void LogPersistence::seekToLogIndex(uint logIndex) {
 inline int LogPersistence::getLastLogIndex() {
   std::lock_guard _(logLock);
   logFs.seekg(0, std::ios::end);
-  return (logFs.tellg() / (memberVariableLog * intWidth + 1)) - 1 ;
+  return (logFs.tellg() / (memberVariableLog * intWidth + 1)) - 1;
 }
 
 std::optional<LogEntry> LogPersistence::readLog(uint logIndex) {
@@ -53,13 +53,15 @@ std::vector<LogEntry> LogPersistence::readLogRange(uint start, uint end) {
   return logEntries;
 }
 
-std::optional<LogEntry> LogPersistence::writeLog(uint logIndex, const LogEntry &logEntry,
-                              int lastCommitIndex) {
+std::optional<LogEntry> LogPersistence::writeLog(uint logIndex,
+                                                 const LogEntry &logEntry,
+                                                 int lastCommitIndex) {
   // TODO: Make a wrapper that ensures you don't call this when leader
   std::lock_guard _(logLock);
   auto oldLogEntry = readLog(logIndex);
-  if(oldLogEntry)
-    assertm(oldLogEntry.value().term <= logEntry.term, "Bhai old term higher than new log entry");
+  if (oldLogEntry)
+    assertm(oldLogEntry.value().term <= logEntry.term,
+            "Bhai old term higher than new log entry");
   seekToLogIndex(logIndex);
   logFs << logEntry.getString() << std::endl;
   incrementLastCommitIndex(lastCommitIndex);
@@ -87,16 +89,17 @@ int LogPersistence::readLastCommitIndex() {
 void LogPersistence::markLogSyncBit(uint logIndex, uint machineId) {
   assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
   std::lock_guard _(syncLock);
-  auto& majorityVote = logSync[logIndex];
-  assertm(majorityVote.test(machineId), "Boss kyu bhej rahe ho dubara");
+  auto &majorityVote = logSync[logIndex];
+  assertm(!majorityVote.test(machineId), "Boss kyu bhej rahe ho dubara");
   majorityVote.set(machineId);
-  if(majorityVote.count() == (machineCount / 2 + 1))
+  if (majorityVote.count() == (machineCount / 2 + 1))
     incrementLastCommitIndex(logIndex);
 }
 
 void LogPersistence::incrementLastCommitIndex(uint lastCommitIndex) {
   std::unique_lock _(lastCommitIndexLock);
-  if(lastCommitIndex == lastCommitIndexCache) return;
+  if (lastCommitIndex == lastCommitIndexCache)
+    return;
   assertm(lastCommitIndex == lastCommitIndexCache + 1,
           "Bhai commit index me garbar he");
   lastCommitIndexFs.clear();
@@ -112,12 +115,13 @@ ElectionPersistence::ElectionPersistence(const std::filesystem::path &homeDir,
   std::fstream(termFsPath, std::ios::app);
   votedForFsPath = homeDir / "voted-for.txt";
   std::fstream(votedForFsPath, std::ios::app);
+  getTerm();
 }
 
 uint ElectionPersistence::getTerm() {
   {
     std::shared_lock _(termLock);
-    if (termCache != std::numeric_limits<uint>::max())
+    if (termCache != 0)
       return termCache;
   }
   {
@@ -139,7 +143,7 @@ uint ElectionPersistence::getTerm() {
 }
 
 std::optional<uint> ElectionPersistence::getVotedFor() {
-  std::shared_lock _(votedForLock);
+  std::lock_guard _(votedForLock);
   std::ifstream ifs(votedForFsPath);
   assertm(bool(ifs), "Bhai file khula nahi, voted for wala");
   uint votedFor;
@@ -151,7 +155,7 @@ std::optional<uint> ElectionPersistence::getVotedFor() {
 
 uint ElectionPersistence::writeVotedFor(uint machineId) {
   assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
-  std::unique_lock _(votedForLock);
+  std::lock_guard _(votedForLock);
   std::fstream fs(votedForFsPath, std::ios::in | std::ios::out | std::ios::ate);
   assertm(bool(fs), "Bhai file khula nahi, voted for wala");
   if (fs.tellg() == 0) { // file size
@@ -159,6 +163,45 @@ uint ElectionPersistence::writeVotedFor(uint machineId) {
     return machineId;
   }
   int machineIdVoted;
-  fs >> machineIdVoted;
+  assertm(fs >> machineIdVoted, "Boss read fail ho gaya");
   return machineIdVoted;
+}
+
+void ElectionPersistence::writeTermAndVote(uint term, uint machineId) {
+  std::fstream fs(termFsPath, std::ios::in | std::ios::out);
+  fs.clear();
+  fs.seekg(0, std::ios::beg);
+  fs << term;
+  // clear vote
+  std::ofstream ofs(votedForFsPath);
+  if (machineId != std::numeric_limits<uint>::max())
+    ofs << machineId;
+}
+
+void ElectionPersistence::setTermAndSetVote(
+    uint term, uint machineId = std::numeric_limits<uint>::max()) {
+  std::scoped_lock _{votedForLock, termLock};
+  {
+    std::fstream fs(termFsPath, std::ios::in | std::ios::out);
+    int oldTerm;
+    if (fs >> oldTerm)
+      assertm(oldTerm <= term, "bsdk election ho gaya he");
+  }
+
+  writeTermAndVote(term, machineId);
+}
+
+bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
+  std::scoped_lock _{votedForLock, termLock};
+
+  std::fstream fs(termFsPath, std::ios::in | std::ios::out);
+  int currTerm;
+  assertm(fs >> currTerm, "File should be readable");
+  assertm(currTerm >= oldTerm, "bsdk election ho gaya he");
+  if (currTerm == oldTerm) {
+    fs.close();
+    writeTermAndVote(oldTerm, selfId);
+    return true;
+  }
+  return false;
 }
