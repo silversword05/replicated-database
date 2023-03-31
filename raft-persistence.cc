@@ -109,7 +109,7 @@ void LogPersistence::markLogSyncBit(uint logIndex, uint machineId, bool updateLa
     updateLastCommitIndex(logIndex);
 }
 
-void LogPersistence::updateLastCommitIndex(uint lastCommitIndex) {
+void LogPersistence::updateLastCommitIndex(int lastCommitIndex) {
   std::unique_lock _(lastCommitIndexLock);
   if (lastCommitIndex == lastCommitIndexCache)
     return;
@@ -196,7 +196,7 @@ bool ElectionPersistence::setTermAndSetVote(
   std::scoped_lock _{votedForLock, termLock};
   {
     std::fstream fs(termFsPath, std::ios::in | std::ios::out);
-    int oldTerm;
+    uint oldTerm;
     if (fs >> oldTerm)
       if (oldTerm >= term) return false;
   }
@@ -209,7 +209,7 @@ bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
   std::scoped_lock _{votedForLock, termLock};
 
   std::fstream fs(termFsPath, std::ios::in | std::ios::out);
-  int currTerm;
+  uint currTerm;
   assertm(fs >> currTerm, "File should be readable");
   assertm(currTerm >= oldTerm, "bsdk election ho gaya he");
   if (currTerm == oldTerm) {

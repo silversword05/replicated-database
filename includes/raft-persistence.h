@@ -55,7 +55,7 @@ public:
 private:
   std::optional<LogEntry> writeLog(uint, const LogEntry &, int);
   inline void seekToLogIndex(uint);
-  void updateLastCommitIndex(uint);
+  void updateLastCommitIndex(int);
 
   std::fstream logFs;
   std::fstream lastCommitIndexFs;
