@@ -68,6 +68,22 @@ std::optional<LogEntry> LogPersistence::writeLog(uint logIndex,
   return oldLogEntry;
 }
 
+std::pair<bool, std::optional<LogEntry>>
+LogPersistence::checkAndWriteLog(uint logIndex, const LogEntry &logEntry,
+                                 int leaderLastCommitIndex, uint prevTerm) {
+  int probableCommitIndex = std::min(leaderLastCommitIndex, (int)logIndex);
+  std::lock_guard _(logLock);
+  if (logIndex == 0)
+    return {true, writeLog(logIndex, logEntry, probableCommitIndex)};
+
+  auto lastToOneEntry = readLog(logIndex - 1);
+  if (!lastToOneEntry.has_value())
+    return {false, {}};
+  if(lastToOneEntry.value().term != prevTerm)
+    return {false, {}};
+  return {true, writeLog(logIndex, logEntry, probableCommitIndex)};
+}
+
 int LogPersistence::readLastCommitIndex() {
   {
     std::shared_lock _(lastCommitIndexLock);
@@ -100,7 +116,7 @@ void LogPersistence::incrementLastCommitIndex(uint lastCommitIndex) {
   std::unique_lock _(lastCommitIndexLock);
   if (lastCommitIndex == lastCommitIndexCache)
     return;
-  assertm(lastCommitIndex == lastCommitIndexCache + 1,
+  assertm(lastCommitIndex > lastCommitIndexCache,
           "Bhai commit index me garbar he");
   lastCommitIndexFs.clear();
   lastCommitIndexFs.seekg(0, std::ios::beg);

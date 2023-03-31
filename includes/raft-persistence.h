@@ -42,18 +42,21 @@ class LogPersistence {
 public:
   LogPersistence(const std::filesystem::path &,
                  uint); // accepts home directory path
-  inline void seekToLogIndex(uint);
-  inline int getLastLogIndex();
   void appendLog(const LogEntry &);
+  inline int getLastLogIndex();
   std::optional<LogEntry> readLog(uint); // log index
   std::vector<LogEntry> readLogRange(uint, uint);
-  std::optional<LogEntry> writeLog(uint, const LogEntry &, int);
-  void incrementLastCommitIndex(uint);
+  std::pair<bool, std::optional<LogEntry>>
+  checkAndWriteLog(uint, const LogEntry &, int, uint);
   int readLastCommitIndex();
   void markLogSyncBit(uint, uint); // index, machineId;
   ~LogPersistence() = default;
 
 private:
+  std::optional<LogEntry> writeLog(uint, const LogEntry &, int);
+  inline void seekToLogIndex(uint);
+  void incrementLastCommitIndex(uint);
+
   std::fstream logFs;
   std::fstream lastCommitIndexFs;
   std::recursive_mutex logLock;
