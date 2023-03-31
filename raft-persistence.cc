@@ -24,13 +24,13 @@ void LogPersistence::appendLog(const LogEntry &logEntry) {
 inline void LogPersistence::seekToLogIndex(uint logIndex) {
   std::lock_guard _(logLock);
   logFs.clear(); // to make sure that reset eof bit if previously set
-  logFs.seekg(logIndex * (memberVariableLog * intWidth + 1), std::ios::beg);
+  logFs.seekg(logIndex * (utils::memberVariableLog * utils::intWidth + 1), std::ios::beg);
 }
 
 inline int LogPersistence::getLastLogIndex() {
   std::lock_guard _(logLock);
   logFs.seekg(0, std::ios::end);
-  return (logFs.tellg() / (memberVariableLog * intWidth + 1)) - 1;
+  return (logFs.tellg() / (utils::memberVariableLog * utils::intWidth + 1)) - 1;
 }
 
 std::optional<LogEntry> LogPersistence::readLog(uint logIndex) {
@@ -100,12 +100,12 @@ int LogPersistence::readLastCommitIndex() {
 }
 
 void LogPersistence::markLogSyncBit(uint logIndex, uint machineId, bool updateLastCommit) {
-  assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
+  assertm(machineId < utils::machineCount, "Ye kon sa naya machine uga diya");
   std::lock_guard _(syncLock);
   auto &majorityVote = logSync[logIndex];
   assertm(!majorityVote.test(machineId), "Boss kyu bhej rahe ho dubara");
   majorityVote.set(machineId);
-  if (majorityVote.count() == (machineCount / 2 + 1) && updateLastCommit)
+  if (majorityVote.count() == (utils::machineCount / 2 + 1) && updateLastCommit)
     updateLastCommitIndex(logIndex);
 }
 
@@ -148,7 +148,7 @@ uint ElectionPersistence::getTerm() {
     }
     {
       std::ofstream ofs(termFsPath);
-      termCache = termStart;
+      termCache = utils::termStart;
       ofs << termCache;
       return termCache;
     }
@@ -167,7 +167,7 @@ std::optional<uint> ElectionPersistence::getVotedFor() {
 }
 
 uint ElectionPersistence::writeVotedFor(uint machineId) {
-  assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
+  assertm(machineId < utils::machineCount, "Ye kon sa naya machine uga diya");
   std::lock_guard _(votedForLock);
   std::fstream fs(votedForFsPath, std::ios::in | std::ios::out | std::ios::ate);
   assertm(bool(fs), "Bhai file khula nahi, voted for wala");

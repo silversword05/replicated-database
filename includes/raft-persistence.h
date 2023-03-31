@@ -1,13 +1,6 @@
 #pragma once
 
-#include <bits/stdc++.h>
-
-#define assertm(exp, msg) assert(((void)msg, exp))
-
-constexpr uint intWidth = 4;
-constexpr uint memberVariableLog = 5;
-constexpr uint machineCount = 5;
-constexpr uint termStart = 1;
+#include <utils.h>
 
 struct LogEntry {
   uint term;
@@ -21,17 +14,17 @@ struct LogEntry {
     ss << std::setfill('0');
 
     [&](auto... args) {
-      ([&] { ss << std::setw(intWidth) << args; }(), ...);
+      ([&] { ss << std::setw(utils::intWidth) << args; }(), ...);
     }(term, key, val, clientId, reqNo);
     return ss.str();
   }
 
   LogEntry fromString(const std::string &line) {
-    assertm(line.size() == intWidth * 4, "Unexpected line size");
+    assertm(line.size() == utils::intWidth * 4, "Unexpected line size");
 
     [&](auto &...args) {
       int i = 0;
-      ([&] { args = std::stoi(line.substr(i++ * intWidth, intWidth)); }(), ...);
+      ([&] { args = std::stoi(line.substr(i++ * utils::intWidth, utils::intWidth)); }(), ...);
     }(term, key, val, clientId, reqNo);
 
     return *this;
@@ -62,7 +55,7 @@ private:
   std::recursive_mutex logLock;
   std::recursive_mutex syncLock; // should be taken before last commit lock
   std::shared_mutex lastCommitIndexLock;
-  std::unordered_map<uint, std::bitset<machineCount>>
+  std::unordered_map<uint, std::bitset<utils::machineCount>>
       logSync;                  // index, majorityBits
   int lastCommitIndexCache{-1}; // just cache
   uint selfId;
