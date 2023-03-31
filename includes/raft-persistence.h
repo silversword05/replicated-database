@@ -49,13 +49,13 @@ public:
   std::pair<bool, std::optional<LogEntry>>
   checkAndWriteLog(uint, const LogEntry &, int, uint);
   int readLastCommitIndex();
-  void markLogSyncBit(uint, uint); // index, machineId;
+  void markLogSyncBit(uint, uint, bool); // index, machineId;
   ~LogPersistence() = default;
 
 private:
   std::optional<LogEntry> writeLog(uint, const LogEntry &, int);
   inline void seekToLogIndex(uint);
-  void incrementLastCommitIndex(uint);
+  void updateLastCommitIndex(uint);
 
   std::fstream logFs;
   std::fstream lastCommitIndexFs;
@@ -72,7 +72,7 @@ class ElectionPersistence {
   ElectionPersistence(const std::filesystem::path &,
                       uint); // accepts home directory path and selfId
   uint getTerm();
-  void setTermAndSetVote(uint, uint);
+  bool setTermAndSetVote(uint, uint);
   bool incrementTermAndSelfVote(uint);
   std::optional<uint> getVotedFor();
   uint writeVotedFor(uint);

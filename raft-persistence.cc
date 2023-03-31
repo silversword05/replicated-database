@@ -18,7 +18,7 @@ void LogPersistence::appendLog(const LogEntry &logEntry) {
   logFs.clear();
   logFs.seekg(0, std::ios::end);
   logFs << logEntry.getString() << std::endl;
-  markLogSyncBit(getLastLogIndex(), selfId);
+  markLogSyncBit(getLastLogIndex(), selfId, true);
 }
 
 inline void LogPersistence::seekToLogIndex(uint logIndex) {
@@ -59,12 +59,9 @@ std::optional<LogEntry> LogPersistence::writeLog(uint logIndex,
   // TODO: Make a wrapper that ensures you don't call this when leader
   std::lock_guard _(logLock);
   auto oldLogEntry = readLog(logIndex);
-  if (oldLogEntry)
-    assertm(oldLogEntry.value().term <= logEntry.term,
-            "Bhai old term higher than new log entry");
   seekToLogIndex(logIndex);
   logFs << logEntry.getString() << std::endl;
-  incrementLastCommitIndex(lastCommitIndex);
+  updateLastCommitIndex(lastCommitIndex);
   return oldLogEntry;
 }
 
@@ -102,17 +99,17 @@ int LogPersistence::readLastCommitIndex() {
   }
 }
 
-void LogPersistence::markLogSyncBit(uint logIndex, uint machineId) {
+void LogPersistence::markLogSyncBit(uint logIndex, uint machineId, bool updateLastCommit) {
   assertm(machineId < machineCount, "Ye kon sa naya machine uga diya");
   std::lock_guard _(syncLock);
   auto &majorityVote = logSync[logIndex];
   assertm(!majorityVote.test(machineId), "Boss kyu bhej rahe ho dubara");
   majorityVote.set(machineId);
-  if (majorityVote.count() == (machineCount / 2 + 1))
-    incrementLastCommitIndex(logIndex);
+  if (majorityVote.count() == (machineCount / 2 + 1) && updateLastCommit)
+    updateLastCommitIndex(logIndex);
 }
 
-void LogPersistence::incrementLastCommitIndex(uint lastCommitIndex) {
+void LogPersistence::updateLastCommitIndex(uint lastCommitIndex) {
   std::unique_lock _(lastCommitIndexLock);
   if (lastCommitIndex == lastCommitIndexCache)
     return;
@@ -194,17 +191,18 @@ void ElectionPersistence::writeTermAndVote(uint term, uint machineId) {
     ofs << machineId;
 }
 
-void ElectionPersistence::setTermAndSetVote(
+bool ElectionPersistence::setTermAndSetVote(
     uint term, uint machineId = std::numeric_limits<uint>::max()) {
   std::scoped_lock _{votedForLock, termLock};
   {
     std::fstream fs(termFsPath, std::ios::in | std::ios::out);
     int oldTerm;
     if (fs >> oldTerm)
-      assertm(oldTerm <= term, "bsdk election ho gaya he");
+      if (oldTerm >= term) return false;
   }
 
   writeTermAndVote(term, machineId);
+  return true;
 }
 
 bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
