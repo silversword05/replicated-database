@@ -1,6 +1,6 @@
 file(GLOB TEST_CODE_SRC CONFIGURE_DEPENDS "*.cc")
 
-set(CODE_FILES ${PROJECT_SOURCE_DIR}/raft-persistence.cc)
+set(CODE_FILES ${PROJECT_SOURCE_DIR}/raft-persistence.cc ${PROJECT_SOURCE_DIR}/raft-control.cc)
 
 foreach(SOURCE_PATH ${TEST_CODE_SRC})
     get_filename_component(EXECUTABLE_NAME ${SOURCE_PATH} NAME_WE)

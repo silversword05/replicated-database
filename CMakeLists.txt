@@ -18,7 +18,7 @@ add_subdirectory(proto)
 add_subdirectory(test)
 
 set(SERVER_EXECUTABLE_NAME raft-service)
-add_executable(${SERVER_EXECUTABLE_NAME} raft.cc)
+add_executable(${SERVER_EXECUTABLE_NAME} raft-grpc.cc)
 target_compile_options(${SERVER_EXECUTABLE_NAME} PRIVATE ${COMPILE_OPTIONS})
 target_compile_features(${SERVER_EXECUTABLE_NAME} PRIVATE ${COMPILE_FEATURES})
 target_include_directories(${SERVER_EXECUTABLE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/includes)

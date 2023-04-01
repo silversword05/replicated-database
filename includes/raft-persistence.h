@@ -24,7 +24,12 @@ struct LogEntry {
 
     [&](auto &...args) {
       int i = 0;
-      ([&] { args = std::stoi(line.substr(i++ * utils::intWidth, utils::intWidth)); }(), ...);
+      (
+          [&] {
+            args =
+                std::stoi(line.substr(i++ * utils::intWidth, utils::intWidth));
+          }(),
+          ...);
     }(term, key, val, clientId, reqNo);
 
     return *this;
@@ -80,13 +85,4 @@ private:
   std::recursive_mutex votedForLock;
   uint termCache{0}; // just cache
   uint selfId;
-};
-
-class Raft final : public ElectionPersistence, public LogPersistence {
-  Raft(const std::filesystem::path &, uint);
-  void addStopToken(const std::stop_token &);
-  ~Raft(); // call stop on stopTokens, clear vote
-
-private:
-  std::vector<std::stop_token> stopTokens;
 };
