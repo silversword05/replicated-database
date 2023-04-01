@@ -9,10 +9,10 @@ class RaftControl {
   void resetLogAndElection();
 
   bool followerToCandidate(uint oldTerm);
-  void candidateToLeader();
+  bool candidateToLeader(uint);
   void leaderToFollower();
-  void candidateToFollower();
-  ~RaftControl(); // call stop on stopTokens, clear vote
+  bool candidateToFollower();
+  ~RaftControl() = default; // call stop on stopTokens, clear vote
 
 private:
   utils::State state;
@@ -20,4 +20,5 @@ private:
   ElectionPersistence electionPersistence;
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;
+  std::atomic<bool> heartbeatRecv;
 };

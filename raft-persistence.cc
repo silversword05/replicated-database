@@ -13,6 +13,22 @@ LogPersistence::LogPersistence(const std::filesystem::path &homeDir,
   readLastCommitIndex();
 }
 
+void LogPersistence::reset() {
+  std::lock_guard _(syncLock);
+  logSync.clear();
+}
+
+void LogPersistence::markSelfSyncBit() {
+  std::lock_guard _(syncLock);
+  readLastCommitIndex();
+  std::unique_lock _(lastCommitIndexLock);
+
+  for(int i=lastCommitIndexCache; i<=getLastLogIndex(); i++) {
+    if(i==-1) continue;
+    markLogSyncBit(i, selfId, true);
+  }
+}
+
 void LogPersistence::appendLog(const LogEntry &logEntry) {
   std::lock_guard _(logLock);
   logFs.clear();

@@ -40,6 +40,7 @@ class LogPersistence {
 public:
   LogPersistence(const std::filesystem::path &,
                  uint); // accepts home directory path
+
   void appendLog(const LogEntry &);
   inline int getLastLogIndex();
   std::optional<LogEntry> readLog(uint); // log index
@@ -48,6 +49,8 @@ public:
   checkAndWriteLog(uint, const LogEntry &, int, uint);
   int readLastCommitIndex();
   void markLogSyncBit(uint, uint, bool); // index, machineId;
+  void reset();
+  void markSelfSyncBit();
   ~LogPersistence() = default;
 
 private:

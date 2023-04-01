@@ -13,6 +13,8 @@ constexpr uint intWidth = 4;
 constexpr uint memberVariableLog = 5;
 constexpr uint machineCount = 5;
 constexpr uint termStart = 1;
+constexpr uint baseSleepTime = 1000;
+constexpr uint maxSleepTime = 2000;
 
 enum State { LEADER, FOLLOWER, CANDIDATE };
 
