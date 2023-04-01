@@ -176,6 +176,8 @@ uint ElectionPersistence::writeVotedFor(uint machineId) {
     return machineId;
   }
   int machineIdVoted;
+  fs.clear();
+  fs.seekg(0, std::ios::beg);
   assertm(fs >> machineIdVoted, "Boss read fail ho gaya");
   return machineIdVoted;
 }

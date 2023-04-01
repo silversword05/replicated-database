@@ -6,11 +6,12 @@ class RaftControl {
   RaftControl(const std::filesystem::path &, uint);
   void addJthread(const std::jthread &);
   void callStopOnAllThreads();
+  void resetLogAndElection();
 
   bool followerToCandidate(uint oldTerm);
   void candidateToLeader();
   void leaderToFollower();
-  bool candidateToFollower();
+  void candidateToFollower();
   ~RaftControl(); // call stop on stopTokens, clear vote
 
 private:

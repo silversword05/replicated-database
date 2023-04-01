@@ -22,11 +22,22 @@ bool RaftControl::followerToCandidate(uint oldTerm) {
   }
 }
 
-bool RaftControl::candidateToFollower() {
+void RaftControl::candidateToFollower() {
   assertm(state == utils::CANDIDATE, "Candidate nahi tha");
 
   {
     std::lock_guard _(stateChangeLock);
     state = utils::FOLLOWER;
   }
+}
+
+void RaftControl::leaderToFollower() {
+    assertm(state == utils::LEADER, "Candidate nahi tha");
+
+    {
+        std::lock_guard _(stateChangeLock);
+        callStopOnAllThreads();
+        state = utils::LEADER;
+    }
+
 }
