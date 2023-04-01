@@ -2,20 +2,21 @@
 
 #include <raft-persistence.h>
 
-class Raft {
-  Raft(const std::filesystem::path &, uint);
+class RaftControl {
+  RaftControl(const std::filesystem::path &, uint);
   void addJthread(const std::jthread &);
   void callStopOnAllThreads();
 
-  void followerToCandidate();
+  bool followerToCandidate(uint oldTerm);
   void candidateToLeader();
   void leaderToFollower();
-  void candidateToFollower();
-  ~Raft(); // call stop on stopTokens, clear vote
+  bool candidateToFollower();
+  ~RaftControl(); // call stop on stopTokens, clear vote
 
 private:
   utils::State state;
   LogPersistence logPersistence;
   ElectionPersistence electionPersistence;
   std::vector<std::jthread> jthreadVector;
+  std::recursive_mutex stateChangeLock;
 };

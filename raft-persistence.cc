@@ -185,6 +185,7 @@ void ElectionPersistence::writeTermAndVote(uint term, uint machineId) {
   fs.clear();
   fs.seekg(0, std::ios::beg);
   fs << term;
+  termCache = term;
   // clear vote
   std::ofstream ofs(votedForFsPath);
   if (machineId != std::numeric_limits<uint>::max())
@@ -196,9 +197,8 @@ bool ElectionPersistence::setTermAndSetVote(
   std::scoped_lock _{votedForLock, termLock};
   {
     std::fstream fs(termFsPath, std::ios::in | std::ios::out);
-    uint oldTerm;
-    if (fs >> oldTerm)
-      if (oldTerm >= term) return false;
+    if (fs >> termCache)
+      if (termCache >= term) return false;
   }
 
   writeTermAndVote(term, machineId);
@@ -209,12 +209,11 @@ bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
   std::scoped_lock _{votedForLock, termLock};
 
   std::fstream fs(termFsPath, std::ios::in | std::ios::out);
-  uint currTerm;
-  assertm(fs >> currTerm, "File should be readable");
-  assertm(currTerm >= oldTerm, "bsdk election ho gaya he");
-  if (currTerm == oldTerm) {
+  assertm(fs >> termCache, "File should be readable");
+  assertm(termCache >= oldTerm, "bsdk election ho gaya he");
+  if (termCache == oldTerm) {
     fs.close();
-    writeTermAndVote(oldTerm, selfId);
+    writeTermAndVote(oldTerm+1, selfId);
     return true;
   }
   return false;

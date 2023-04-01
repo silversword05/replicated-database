@@ -67,6 +67,7 @@ private:
 };
 
 class ElectionPersistence {
+public:
   ElectionPersistence(const std::filesystem::path &,
                       uint); // accepts home directory path and selfId
   uint getTerm();

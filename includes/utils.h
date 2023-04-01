@@ -30,6 +30,6 @@ std::string getHostName(uint machineId) {
   hostname.resize(HOST_NAME_MAX + 1);
   gethostname(hostname.data(), HOST_NAME_MAX + 1);
 
-  return ("node" + std::to_string(machineId) + hostname.substr(hostname.find(".")));
+  return ("node" + std::to_string(machineId));
 }
 } // namespace utils
