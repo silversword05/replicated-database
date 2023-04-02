@@ -4,7 +4,7 @@
 
 class RaftControl {
   RaftControl(const std::filesystem::path &, uint);
-  void addJthread(const std::jthread &);
+  void addJthread(std::jthread &&);
   void callStopOnAllThreads();
   void resetLogAndElection();
 

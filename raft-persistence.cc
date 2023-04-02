@@ -19,9 +19,9 @@ void LogPersistence::reset() {
 }
 
 void LogPersistence::markSelfSyncBit() {
-  std::lock_guard _(syncLock);
+  std::lock_guard _1(syncLock);
   readLastCommitIndex();
-  std::unique_lock _(lastCommitIndexLock);
+  std::unique_lock _2(lastCommitIndexLock);
 
   for(int i=lastCommitIndexCache; i<=getLastLogIndex(); i++) {
     if(i==-1) continue;

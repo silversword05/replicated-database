@@ -1,6 +1,6 @@
 #include <raft-control.h>
 
-void RaftControl::addJthread(const std::jthread &thread) {
+void RaftControl::addJthread(std::jthread &&thread) {
   jthreadVector.push_back(std::move(thread));
 }
 
@@ -44,7 +44,6 @@ void RaftControl::leaderToFollower() {
 }
 
 bool RaftControl::candidateToLeader(uint localTerm) {
-  {
     std::lock_guard _(stateChangeLock);
     if(state != utils::CANDIDATE) return false;
 
@@ -54,7 +53,7 @@ bool RaftControl::candidateToLeader(uint localTerm) {
     logPersistence.markSelfSyncBit();
     // TODO: Spawn threads
     state = utils::LEADER;
-  }
+    return true;
 }
 
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId)
@@ -63,7 +62,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId)
   state = utils::FOLLOWER;
 
   auto sleepRandom = [] {
-    std::mt19937 gen(std::random_device());
+    std::mt19937 gen(0);
     std::uniform_int_distribution<> dist{utils::baseSleepTime,
                                          utils::maxSleepTime};
     std::this_thread::sleep_for(std::chrono::milliseconds{dist(gen)});
@@ -78,6 +77,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId)
         // TODO: Request Vote RPCs
         // TODO: If success candidate to leader, else candidate to follower
         // TODO: If candidate to leader fails then candidate to follower
+        return this->electionPersistence.getTerm();
       } else {
         return this->electionPersistence.getTerm();
       }
