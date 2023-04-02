@@ -18,10 +18,6 @@ message RetLog {
     bool response = 1;
 }
 
-service ElectionBook {
+service RaftBook {
     rpc RequestVote(ArgsVote) returns (RetVote) {}
-}
-
-service LogBook {
-    rpc AppendEntries(ArgsLog) returns (RetLog) {}
 }

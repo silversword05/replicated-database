@@ -7,21 +7,20 @@ void ReplicatedDatabaseServer::setSelfId(uint id) {
 auto ReplicatedDatabaseServer::operator()() {
   builder.AddListeningPort(utils::getAddress(selfId),
                            grpc::InsecureServerCredentials());
-  builder.RegisterService(&election_book_service);
-  builder.RegisterService(&log_book_service);
+  builder.RegisterService(&raft_book_service);
 
   return std::unique_ptr<grpc::Server>(builder.BuildAndStart());
 }
 
-ElectionClient::ElectionClient() {
+RaftClient::RaftClient() {
   for(uint i = 0; i < utils::machineCount; i++) {
-    stubVector.push_back(std::move(replicateddatabase::ElectionBook::NewStub(grpc::CreateChannel(
+    stubVector.push_back(std::move(replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
             utils::getAddress(i), grpc::InsecureChannelCredentials()))));
   }
 }
 
 ::grpc::Status
-ElectionBookService::RequestVote(::grpc::ServerContext *,
+RaftBookService::RequestVote(::grpc::ServerContext *,
                                  const ::replicateddatabase::ArgsVote *args,
                                  ::replicateddatabase::RetVote *ret) {
   std::cout << "In request vote " << args->message() << std::endl;
@@ -29,28 +28,7 @@ ElectionBookService::RequestVote(::grpc::ServerContext *,
   return grpc::Status::OK;
 }
 
-::grpc::Status
-LogBookService::AppendEntries(::grpc::ServerContext *,
-                              const ::replicateddatabase::ArgsLog *args,
-                              ::replicateddatabase::RetLog *ret) {
-  std::cout << "In append entries " << args->message() << std::endl;
-  ret->set_response(true);
-
-//  ElectionClient().sendRpc();
-  return grpc::Status::OK;
-}
-
-void LogClient::sendRpc() {
-  grpc::ClientContext context;
-  replicateddatabase::ArgsLog query;
-  replicateddatabase::RetLog response;
-
-  query.set_message("Hello Log");
-  std::cout << "Sending query" << std::endl;
-  stub->AppendEntries(&context, query, &response);
-}
-
-void ElectionClient::sendRpc(uint machineId) {
+void RaftClient::sendRpc(uint machineId) {
   assertm(machineId < utils::machineCount,"nayi machine");
   grpc::ClientContext context;
   replicateddatabase::ArgsVote query;
