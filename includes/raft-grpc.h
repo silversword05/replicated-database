@@ -39,31 +39,25 @@ public:
 };
 
 class ElectionClient {
-  std::unique_ptr<replicateddatabase::ElectionBook::Stub> stub;
+  std::vector<std::unique_ptr<replicateddatabase::ElectionBook::Stub>> stubVector;
 
 public:
   ElectionClient(ElectionClient const &) = delete;
   void operator=(ElectionClient const &) = delete;
 
-  void sendRpc();
+  void sendRpc(uint);
 
-  ElectionClient()
-      : stub(replicateddatabase::ElectionBook::NewStub(grpc::CreateChannel(
-            utils::server_address, grpc::InsecureChannelCredentials()))) {}
+  ElectionClient();
+
 };
 
 class ReplicatedDatabaseServer {
   grpc::ServerBuilder builder;
   ElectionBookService election_book_service;
   LogBookService log_book_service;
+  uint selfId;
 
 public:
-  auto operator()() {
-    builder.AddListeningPort(utils::server_address,
-                             grpc::InsecureServerCredentials());
-    builder.RegisterService(&election_book_service);
-    builder.RegisterService(&log_book_service);
-
-    return std::unique_ptr<grpc::Server>(builder.BuildAndStart());
-  }
+  void setSelfId(uint);
+  auto operator()();
 };

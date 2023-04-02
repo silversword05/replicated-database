@@ -11,7 +11,7 @@ constexpr auto server_address = "localhost:50051";
 
 constexpr uint intWidth = 4;
 constexpr uint memberVariableLog = 5;
-constexpr uint machineCount = 5;
+constexpr uint machineCount = 3;
 constexpr uint termStart = 1;
 constexpr uint baseSleepTime = 1000;
 constexpr uint maxSleepTime = 2000;
@@ -33,5 +33,9 @@ std::string getHostName(uint machineId) {
   gethostname(hostname.data(), HOST_NAME_MAX + 1);
 
   return ("node" + std::to_string(machineId));
+}
+
+std::string getAddress(uint machineId) {
+  return getHostName(0) + ":5005" + std::to_string(machineId);
 }
 } // namespace utils
