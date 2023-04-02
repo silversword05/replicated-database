@@ -15,10 +15,11 @@ constexpr uint machineCount = 3;
 constexpr uint termStart = 1;
 constexpr uint baseSleepTime = 1000;
 constexpr uint maxSleepTime = 2000;
+constexpr bool forceLocalHost = true;
 
 enum State { LEADER, FOLLOWER, CANDIDATE };
 
-uint getSelfId() {
+inline uint getSelfId() {
   std::string hostname;
   hostname.resize(HOST_NAME_MAX + 1);
   gethostname(hostname.data(), HOST_NAME_MAX + 1);
@@ -27,7 +28,7 @@ uint getSelfId() {
   return std::stoi(hostname.substr(4, hostname.find(".") - 4));
 }
 
-std::string getHostName(uint machineId) {
+inline std::string getHostName(uint machineId) {
   std::string hostname;
   hostname.resize(HOST_NAME_MAX + 1);
   gethostname(hostname.data(), HOST_NAME_MAX + 1);
@@ -35,7 +36,9 @@ std::string getHostName(uint machineId) {
   return ("node" + std::to_string(machineId));
 }
 
-std::string getAddress(uint machineId) {
-  return getHostName(0) + ":5005" + std::to_string(machineId);
+inline std::string getAddress(uint machineId) {
+  if constexpr (forceLocalHost)
+    return "localhost:5005" + std::to_string(machineId);
+  return getHostName(machineId) + ":5005" + std::to_string(machineId);
 }
 } // namespace utils
