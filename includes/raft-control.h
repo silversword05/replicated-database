@@ -3,6 +3,7 @@
 #include <raft-persistence.h>
 
 class RaftControl {
+public:
   RaftControl(const std::filesystem::path &, uint);
   void addJthread(std::jthread &&);
   void callStopOnAllThreads();

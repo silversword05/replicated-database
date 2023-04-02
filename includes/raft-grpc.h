@@ -7,7 +7,7 @@
 #include <replicated-database.grpc.pb.h>
 #include <replicated-database.pb.h>
 
-#include "utils.h"
+#include <utils.h>
 
 class ElectionBookService final
     : public ::replicateddatabase::ElectionBook::Service {
