@@ -56,8 +56,8 @@ bool RaftControl::candidateToLeader(uint localTerm) {
     return true;
 }
 
-RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId)
-    : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId) {
+RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId, RaftClient& raftClient_)
+    : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId), raftClient(raftClient_) {
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 

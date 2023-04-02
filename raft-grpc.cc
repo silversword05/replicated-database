@@ -1,35 +1,27 @@
-#include "includes/raft-grpc.h"
-
-void ReplicatedDatabaseServer::setSelfId(uint id) {
-  selfId = id;
-}
-
-auto ReplicatedDatabaseServer::operator()() {
-  builder.AddListeningPort(utils::getAddress(selfId),
-                           grpc::InsecureServerCredentials());
-  builder.RegisterService(&raft_book_service);
-
-  return std::unique_ptr<grpc::Server>(builder.BuildAndStart());
-}
+#include <raft-server.h>
+#include <raft-client.h>
 
 RaftClient::RaftClient() {
-  for(uint i = 0; i < utils::machineCount; i++) {
-    stubVector.push_back(std::move(replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
-            utils::getAddress(i), grpc::InsecureChannelCredentials()))));
+  for (uint i = 0; i < utils::machineCount; i++) {
+    stubVector.push_back(
+        replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
+            utils::getAddress(i), grpc::InsecureChannelCredentials())));
   }
 }
 
+RaftServer::RaftServer(RaftControl &raftControl_) : raftControl(raftControl_) {}
+
 ::grpc::Status
-RaftBookService::RequestVote(::grpc::ServerContext *,
-                                 const ::replicateddatabase::ArgsVote *args,
-                                 ::replicateddatabase::RetVote *ret) {
+RaftServer::RequestVote(::grpc::ServerContext *,
+                        const ::replicateddatabase::ArgsVote *args,
+                        ::replicateddatabase::RetVote *ret) {
   std::cout << "In request vote " << args->message() << std::endl;
   ret->set_response(true);
   return grpc::Status::OK;
 }
 
 void RaftClient::sendRpc(uint machineId) {
-  assertm(machineId < utils::machineCount,"nayi machine");
+  assertm(machineId < utils::machineCount, "nayi machine");
   grpc::ClientContext context;
   replicateddatabase::ArgsVote query;
   replicateddatabase::RetVote response;
