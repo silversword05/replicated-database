@@ -1,4 +1,0 @@
-/users/chakwate/.cache/JetBrains/RemoteDev/dist/9cbfe3b1e0d76_CLion-2022.3.3/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/users/chakwate/.cache/JetBrains/RemoteDev/dist/9cbfe3b1e0d76_CLion-2022.3.3/bin/ninja/linux/x64/ninja -G Ninja -S /users/chakwate/replicated-database -B /users/chakwate/replicated-database/cmake-build-debug
--- Configuring done
--- Generating done
--- Build files have been written to: /users/chakwate/replicated-database/cmake-build-debug

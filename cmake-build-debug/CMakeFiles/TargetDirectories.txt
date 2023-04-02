@@ -1,9 +1,0 @@
-/users/chakwate/replicated-database/cmake-build-debug/CMakeFiles/raft-service.dir
-/users/chakwate/replicated-database/cmake-build-debug/CMakeFiles/edit_cache.dir
-/users/chakwate/replicated-database/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/users/chakwate/replicated-database/cmake-build-debug/proto/CMakeFiles/myproto.dir
-/users/chakwate/replicated-database/cmake-build-debug/proto/CMakeFiles/edit_cache.dir
-/users/chakwate/replicated-database/cmake-build-debug/proto/CMakeFiles/rebuild_cache.dir
-/users/chakwate/replicated-database/cmake-build-debug/test/CMakeFiles/test-log.dir
-/users/chakwate/replicated-database/cmake-build-debug/test/CMakeFiles/edit_cache.dir
-/users/chakwate/replicated-database/cmake-build-debug/test/CMakeFiles/rebuild_cache.dir
