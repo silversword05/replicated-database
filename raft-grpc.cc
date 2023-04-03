@@ -15,8 +15,8 @@ RaftServer::RaftServer(RaftControl &raftControl_) : raftControl(raftControl_) {}
 RaftServer::RequestVote(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsVote *args,
                         ::replicateddatabase::RetVote *ret) {
-  std::cout << "In request vote " << args->message() << std::endl;
-  ret->set_response(true);
+  std::cout << "In request vote " << args->term() << std::endl;
+  ret->set_term(0);
   return grpc::Status::OK;
 }
 
@@ -26,7 +26,7 @@ void RaftClient::sendRpc(uint machineId) {
   replicateddatabase::ArgsVote query;
   replicateddatabase::RetVote response;
 
-  query.set_message("Hello Election");
+  query.set_term(0);
   stubVector[machineId]->RequestVote(&context, query, &response);
 }
 
