@@ -3,11 +3,15 @@ syntax = "proto3";
 package replicateddatabase;
 
 message ArgsVote {
-    string message = 1;
+    uint32 term = 1;
+    uint32 candidateId = 2;
+    int32 lastLogIndex = 3;
+    int32 lastLogTerm = 4;
 } 
 
 message RetVote {
-    bool response = 1;
+    bool voteGranted = 1;
+    uint32 term = 2;
 } 
 
 message ArgsLog {

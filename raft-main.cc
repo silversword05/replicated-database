@@ -23,4 +23,5 @@ int main(int argc, char *argv[]) {
     builder.RegisterService(&raftServer);
     return std::unique_ptr<grpc::Server>(builder.BuildAndStart());
   }();
+  server->Wait();
 }
