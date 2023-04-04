@@ -60,7 +60,8 @@ bool RaftControl::candidateToLeader(uint localTerm) {
 
 void RaftControl::toFollower() {
   std::lock_guard _(stateChangeLock);
-  if (state == utils::FOLLOWER) return;
+  if (state == utils::FOLLOWER)
+    return;
   if (state == utils::LEADER) {
     leaderToFollower();
     return;
@@ -85,7 +86,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   state = utils::FOLLOWER;
 
   std::jthread timeoutThread([this, selfId]() {
-    int localTerm = utils::termStart;
+    int localTerm = this->electionPersistence.getTerm();
 
     auto sleepRandom = [] {
       std::mt19937 gen(0);
@@ -95,18 +96,20 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
     };
 
     auto requestVotes = [&] {
-      uint majorityCount  = 1;
+      uint majorityCount = 1;
       for (uint i = 0; i < utils::machineCount; i++) {
-        if(i == selfId) continue;
-        auto [index, term] = this->logPersistence.getLastLogData();
-        auto voteGranted = this->raftClient.sendRequestVoteRpc(localTerm, selfId, index, term, i);
-        if(!voteGranted.has_value())
+        if (i == selfId)
           continue;
-        if(!voteGranted.value())
+        auto [index, term] = this->logPersistence.getLastLogData();
+        auto voteGranted = this->raftClient.sendRequestVoteRpc(
+            localTerm, selfId, index, term, i);
+        if (!voteGranted.has_value())
+          continue;
+        if (!voteGranted.value())
           return false;
         majorityCount++;
       }
-      return (majorityCount > (utils::machineCount)/2);
+      return (majorityCount > (utils::machineCount) / 2);
     };
 
     auto performElecTimeoutCheck = [&] {
@@ -115,9 +118,10 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
         return this->electionPersistence.getTerm();
       } else {
         if (this->followerToCandidate(localTerm)) {
-          if(requestVotes()) {
-            if(!this->candidateToLeader(localTerm))
-              assertm(!this->candidateToFollower(), "Pahele to candidate baan jana chaiye");
+          if (requestVotes()) {
+            if (!this->candidateToLeader(localTerm + 1))
+              assertm(!this->candidateToFollower(),
+                      "Pahele to candidate baan jana chaiye");
           } else {
             this->candidateToFollower();
           }
@@ -129,14 +133,20 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
     };
 
     while (true) {
-      if (this->compareState(utils::LEADER)) {
-        localTerm = this->electionPersistence.getTerm();
-        sleepRandom();
-      }
-
-      localTerm = performElecTimeoutCheck();
       sleepRandom();
+      if (this->compareState(utils::LEADER))
+        localTerm = this->electionPersistence.getTerm();
+      else
+        localTerm = performElecTimeoutCheck();
     }
   });
   timeoutThread.detach();
 }
+
+// line 129 localTerm+1
+// correct emum order
+// force delete
+// proper log functions
+// else in timeout thread while true loop
+// remove sleepRandom inside if
+// line 93 get Term

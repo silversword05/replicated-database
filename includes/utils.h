@@ -19,7 +19,7 @@ constexpr uint baseSleepTime = 1000;
 constexpr uint maxSleepTime = 2000;
 constexpr bool forceLocalHost = true;
 
-enum State { LEADER, FOLLOWER, CANDIDATE };
+enum State { FOLLOWER, CANDIDATE, LEADER };
 
 inline uint getSelfId() {
   std::string hostname;
