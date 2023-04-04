@@ -35,6 +35,7 @@ void LogPersistence::appendLog(const LogEntry &logEntry) {
   logFs.clear();
   logFs.seekg(0, std::ios::end);
   logFs << logEntry.getString() << std::endl;
+  logFs.flush();
   markLogSyncBit(getLastLogIndex(), selfId, true);
 }
 
@@ -91,6 +92,7 @@ std::optional<LogEntry> LogPersistence::writeLog(uint logIndex,
   auto oldLogEntry = readLog(logIndex);
   seekToLogIndex(logIndex);
   logFs << logEntry.getString() << std::endl;
+  logFs.flush();
   updateLastCommitIndex(lastCommitIndex);
   return oldLogEntry;
 }
@@ -170,6 +172,8 @@ void LogPersistence::updateLastCommitIndex(int lastCommitIndex) {
   lastCommitIndexFs.seekg(0, std::ios::beg);
   lastCommitIndexFs << lastCommitIndex;
   lastCommitIndexCache = lastCommitIndex;
+
+  lastCommitIndexFs.flush();
 }
 
 ElectionPersistence::ElectionPersistence(const std::filesystem::path &homeDir,
@@ -201,6 +205,7 @@ uint ElectionPersistence::getTerm() {
       std::ofstream ofs(termFsPath);
       termCache = utils::termStart;
       ofs << termCache;
+      ofs.flush();
       return termCache;
     }
   }
@@ -224,6 +229,7 @@ uint ElectionPersistence::writeVotedFor(uint machineId) {
   assertm(bool(fs), "Bhai file khula nahi, voted for wala");
   if (fs.tellg() == 0) { // file size
     fs << machineId;
+    fs.flush();
     return machineId;
   }
   int machineIdVoted;
@@ -238,11 +244,14 @@ void ElectionPersistence::writeTermAndVote(uint term, uint machineId) {
   fs.clear();
   fs.seekg(0, std::ios::beg);
   fs << term;
+  fs.flush();
   termCache = term;
   // clear vote
   std::ofstream ofs(votedForFsPath);
-  if (machineId != std::numeric_limits<uint>::max())
+  if (machineId != std::numeric_limits<uint>::max()) {
     ofs << machineId;
+    ofs.flush();
+  }
 }
 
 bool ElectionPersistence::setTermAndSetVote(
