@@ -58,6 +58,9 @@ bool RaftControl::candidateToLeader(uint localTerm) {
   logEntry.fillDummyEntry();
   logEntry.term = electionPersistence.getTerm();
   logPersistence.appendLog(logEntry);
+
+  utils::print("Changing the Machine: ", this->selfId,
+               " to LEADER for the term: ", localTerm);
   addJthread(
       std::jthread([this](std::stop_token s) { this->consumerFunc(s); }));
   for (uint i = 0; i < utils::machineCount; i++) {

@@ -51,7 +51,7 @@ public:
                  uint); // accepts home directory path
 
   void appendLog(const LogEntry &);
-  inline int getLastLogIndex();
+  int getLastLogIndex();
   std::optional<LogEntry> readLog(uint); // log index
   std::vector<LogEntry> readLogRange(uint, uint);
   std::pair<bool, std::optional<LogEntry>>

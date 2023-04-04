@@ -45,7 +45,7 @@ inline void LogPersistence::seekToLogIndex(uint logIndex) {
               std::ios::beg);
 }
 
-inline int LogPersistence::getLastLogIndex() {
+int LogPersistence::getLastLogIndex() {
   std::lock_guard _(logLock);
   logFs.seekg(0, std::ios::end);
   return (logFs.tellg() / (utils::memberVariableLog * utils::intWidth + 1)) - 1;
@@ -123,7 +123,7 @@ bool LogPersistence::checkEmptyHeartbeat(uint logIndex,
   std::lock_guard _(logLock);
   assertm(int(logIndex) > readLastCommitIndex(), "Hona nahi chaiye ye unhoni");
   auto lastToOneEntry = readLog(logIndex - 1);
-  if(!lastToOneEntry.has_value())
+  if (!lastToOneEntry.has_value())
     return false;
   if (lastToOneEntry.value().term != prevTerm)
     return false;
