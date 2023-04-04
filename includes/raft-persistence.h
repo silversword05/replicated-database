@@ -20,7 +20,8 @@ struct LogEntry {
   }
 
   LogEntry fromString(const std::string &line) {
-    assertm(line.size() == utils::intWidth * 4, "Unexpected line size");
+    assertm(line.size() == utils::intWidth * utils::memberVariableLog,
+            "Unexpected line size");
 
     [&](auto &...args) {
       int i = 0;
@@ -36,6 +37,9 @@ struct LogEntry {
   }
 
   void fillDummyEntry() {
+    term = 0;
+    clientId = 0;
+    reqNo = 0;
     key = std::pow(10, utils::intWidth) - 1;
     val = std::pow(10, utils::intWidth) - 1;
   }
