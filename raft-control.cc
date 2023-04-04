@@ -4,9 +4,7 @@ void RaftControl::addJthread(std::jthread &&thread) {
   jthreadVector.push_back(std::move(thread));
 }
 
-void RaftControl::callStopOnAllThreads() {
-  jthreadVector.clear();
-}
+void RaftControl::callStopOnAllThreads() { jthreadVector.clear(); }
 
 bool RaftControl::followerToCandidate(uint &oldTerm) {
   assertm(state == utils::FOLLOWER, "Follower nahi tha");
@@ -54,12 +52,15 @@ bool RaftControl::candidateToLeader(uint localTerm) {
   logPersistence.reset();
   logPersistence.markSelfSyncBit();
   // TODO: Spawn threads
-
-  addJthread(std::jthread([this](std::stop_token s) {
-    this->consumerFunc();
-  }));
-
-
+  // TODO: Add dummy entry
+  addJthread(
+      std::jthread([this](std::stop_token s) { this->consumerFunc(s); }));
+  for (uint i = 0; i < utils::machineCount; i++) {
+    if (i == selfId)
+      continue;
+    addJthread(std::jthread(
+        [this, i](std::stop_token s) { this->followerFunc(i, s); }));
+  }
   state = utils::LEADER;
   return true;
 }
@@ -84,23 +85,37 @@ bool RaftControl::compareState(utils::State expected) {
   return state == expected;
 }
 
-void RaftControl::consumerFunc() {
+void RaftControl::consumerFunc(const std::stop_token &s) {
   LogEntry logEntry;
-  while(clientQueue.try_dequeue(logEntry)) {
+  while (clientQueue.try_dequeue(logEntry) && !s.stop_requested()) {
     logEntry.term = electionPersistence.getTerm();
     logPersistence.appendLog(logEntry);
   }
   std::this_thread::yield();
 }
 
-void RaftControl::followerFunc(uint candidateId) {
-  int lastSyncIndex = logPersistence.readLastCommitIndex();
+void RaftControl::followerFunc(uint localTerm, uint candidateId,
+                               const std::stop_token &s) {
+  int lastSyncIndex = logPersistence.readLastCommitIndex() + 1;
+  while (!s.stop_requested()) {
+    auto logEntry = logPersistence.readLog(lastSyncIndex);
+    if (logEntry.has_value()) {
+      int prevLogTerm = -1;
+      auto lastToOneEntry = logPersistence.readLog(lastSyncIndex - 1);
+      if (lastToOneEntry.has_value())
+        prevLogTerm = lastToOneEntry.value().term;
+      auto syncSuccess = raftClient.sendAppendEntryRpc(
+          localTerm, selfId, lastSyncIndex, prevLogTerm,
+          logEntry.value().getString(), logPersistence.readLastCommitIndex(),
+          candidateId);
+    }
+  }
 }
 
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
                          RaftClient &raftClient_)
     : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId),
-      raftClient(raftClient_) {
+      raftClient(raftClient_), selfId(selfId) {
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 
@@ -119,9 +134,10 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
       for (uint i = 0; i < utils::machineCount; i++) {
         if (i == selfId)
           continue;
-        auto [index, term] = this->logPersistence.getLastLogData();
+        auto [lastLogIndex, lastLogTerm] =
+            this->logPersistence.getLastLogData();
         auto voteGranted = this->raftClient.sendRequestVoteRpc(
-            localTerm, selfId, index, term, i);
+            localTerm, selfId, lastLogIndex, lastLogTerm, i);
         if (!voteGranted.has_value())
           continue;
         if (!voteGranted.value())

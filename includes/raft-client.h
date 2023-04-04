@@ -17,4 +17,5 @@ public:
   void operator=(RaftClient const &) = delete;
 
   std::optional<bool> sendRequestVoteRpc(uint, uint, int, int, uint);
+  std::optional<bool> sendAppendEntryRpc(uint, uint, uint, int, std::string, int, uint);
 };

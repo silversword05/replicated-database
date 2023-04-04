@@ -17,8 +17,8 @@ public:
   void toFollower();
   bool compareState(utils::State);
 
-  void consumerFunc();
-  void followerFunc(uint);
+  void consumerFunc(const std::stop_token&);
+  void followerFunc(uint, uint, const std::stop_token&);
   ~RaftControl() = default; // call stop on stopTokens, clear vote
 
   LogPersistence logPersistence;
@@ -26,8 +26,9 @@ public:
   RaftClient &raftClient;
   std::atomic<bool> heartbeatRecv;
 private:
-  moodycamel::ConcurrentQueue<uint> clientQueue;
+  moodycamel::ConcurrentQueue<LogEntry> clientQueue;
   utils::State state;
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;
+  uint selfId;
 };
