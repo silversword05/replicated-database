@@ -17,5 +17,8 @@ public:
   virtual ::grpc::Status RequestVote(::grpc::ServerContext *,
                                      const ::replicateddatabase::ArgsVote *,
                                      ::replicateddatabase::RetVote *);
+  virtual ::grpc::Status AppendEntries(::grpc::ServerContext *,
+                                       const ::replicateddatabase::ArgsAppend *,
+                                       ::replicateddatabase::RetAppend *);
 };
 

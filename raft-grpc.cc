@@ -45,6 +45,13 @@ RaftServer::RequestVote(::grpc::ServerContext *,
   return grpc::Status::OK;
 }
 
+::grpc::Status
+RaftServer::AppendEntries(::grpc::ServerContext *,
+                        const ::replicateddatabase::ArgsAppend *args,
+                        ::replicateddatabase::RetAppend *ret) {
+  return grpc::Status::OK;
+}
+
 std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint selfId, int lastLogIndex, int lastLogTerm, uint toId) {
   assertm(selfId < utils::machineCount, "nayi machine");
   grpc::ClientContext context;
