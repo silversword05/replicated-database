@@ -72,6 +72,11 @@ void RaftControl::toFollower() {
   assertm(false, "konsa naya state hai");
 }
 
+bool RaftControl::compareState(utils::State expected) {
+  std::lock_guard _(stateChangeLock);
+  return state == expected;
+}
+
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
                          RaftClient &raftClient_)
     : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId),
@@ -90,16 +95,17 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
     };
 
     auto requestVotes = [&] {
-      uint majorityCount  = 0;
+      uint majorityCount  = 1;
       for (uint i = 0; i < utils::machineCount; i++) {
+        if(i == selfId) continue;
         auto [index, term] = this->logPersistence.getLastLogData();
-        auto voteGranted = this->raftClient.sendRequestVoteRpc(localTerm, selfId, index, term);
+        auto voteGranted = this->raftClient.sendRequestVoteRpc(localTerm, selfId, index, term, i);
         if(!voteGranted.has_value())
           continue;
         if(!voteGranted.value())
           return false;
         majorityCount++;
-        if(majorityCount >= (utils::machineCount)/2) 
+        if(majorityCount > (utils::machineCount)/2) 
           return true;
       }
       return false;
@@ -113,7 +119,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
         if (this->followerToCandidate(localTerm)) {
           if(requestVotes()) {
             if(!this->candidateToLeader(localTerm))
-              this->candidateToFollower();
+              assertm(!this->candidateToFollower(), "Pahele to candidate baan jana chaiye");
           } else {
             this->candidateToFollower();
           }
@@ -125,7 +131,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
     };
 
     while (true) {
-      if (this->state == utils::LEADER) {
+      if (this->compareState(utils::LEADER)) {
         localTerm = this->electionPersistence.getTerm();
         sleepRandom();
       }
