@@ -16,15 +16,17 @@ RaftServer::RequestVote(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsVote *args,
                         ::replicateddatabase::RetVote *ret) {
   std::lock_guard _(rpcLock);
-  auto lastLogIndexAndTerm = raftControl.logPersistence.getLastLogData();
-  if (lastLogIndexAndTerm.second > args->lastlogterm()) {
+  raftControl.heartbeatRecv.store(true);
+  
+  auto [lastLogIndex, lastLogTerm] = raftControl.logPersistence.getLastLogData();
+  if (lastLogTerm > args->lastlogterm()) {
     // vote not granted
     ret->set_votegranted(false);
     ret->set_term(raftControl.electionPersistence.getTerm());
     return grpc::Status::OK;
   }
 
-  if (lastLogIndexAndTerm.second == args->lastlogterm() && lastLogIndexAndTerm.first > args->lastlogindex()) {
+  if (lastLogTerm == args->lastlogterm() && lastLogIndex > args->lastlogindex()) {
     ret->set_votegranted(false);
     ret->set_term(raftControl.electionPersistence.getTerm());
     return grpc::Status::OK;

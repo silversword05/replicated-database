@@ -20,9 +20,9 @@ public:
   LogPersistence logPersistence;
   ElectionPersistence electionPersistence;
   RaftClient &raftClient;
+  std::atomic<bool> heartbeatRecv;
 private:
   utils::State state;
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;
-  std::atomic<bool> heartbeatRecv;
 };
