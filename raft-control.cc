@@ -129,8 +129,10 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
       }
     } else {
       // blank heartbeat
+      int prevLogTerm = -1;
+      auto lastToOneEntry = logPersistence.readLog(lastSyncIndex - 1);
       auto syncSuccess = raftClient.sendAppendEntryRpc(
-          localTerm, selfId, lastSyncIndex, -1, "",
+          localTerm, selfId, lastSyncIndex, prevLogTerm, "",
           logPersistence.readLastCommitIndex(), candidateId);
       if (syncSuccess.has_value() && !syncSuccess.value()) {
         lastSyncIndex--;
