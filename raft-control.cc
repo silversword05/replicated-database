@@ -105,9 +105,9 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
         if(!voteGranted.value())
           return false;
         majorityCount++;
-        if(majorityCount > (utils::machineCount)/2) 
-          return true;
       }
+      if(majorityCount > (utils::machineCount)/2) 
+          return true;
       return false;
     };
 

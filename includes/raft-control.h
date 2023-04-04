@@ -15,6 +15,9 @@ public:
   bool candidateToFollower();
   void toFollower();
   bool compareState(utils::State);
+
+  void consumerFunc();
+  void followerFunc();
   ~RaftControl() = default; // call stop on stopTokens, clear vote
 
   LogPersistence logPersistence;
