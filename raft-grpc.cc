@@ -78,7 +78,7 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
                                                        args->leadercommitindex(),
                                                        args->prevlogterm());
   if (writeSuccess){
-    // TODO: send negative ack to client of oldlogentry (logRet.second)
+    // TODO: send negative ack to client of oldlogentry (logRet.second), check oldentry hasvalue
     ret->set_term(raftControl.electionPersistence.getTerm());
     ret->set_success(true);
     return grpc::Status::OK;

@@ -97,6 +97,10 @@ LogPersistence::checkAndWriteLog(uint logIndex, const LogEntry &logEntry,
                                  int leaderLastCommitIndex, uint prevTerm) {
   int probableCommitIndex = std::min(leaderLastCommitIndex, (int)logIndex);
   std::lock_guard _(logLock);
+  if (int(logIndex) <= readLastCommitIndex()) {
+    assertm(readLog(logIndex).value().term == logEntry.term, "log entry dont match when leaderLastCommitIndex small");
+    return {true, {}};
+  }
   if (logIndex == 0)
     return {true, writeLog(logIndex, logEntry, probableCommitIndex)};
 
