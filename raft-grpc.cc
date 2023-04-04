@@ -15,16 +15,31 @@ RaftServer::RaftServer(RaftControl &raftControl_) : raftControl(raftControl_) {}
 RaftServer::RequestVote(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsVote *args,
                         ::replicateddatabase::RetVote *ret) {
-  std::lock_guard _(requestVoteLock);
-  auto lastLogIndexAndTerm = raftControl.logPersistence;
-  if (lastLogIndexAndTerm.term > args->lastLogTerm()) {
-    // cant vote
-    ret->set_voteGranted(false);
+  std::lock_guard _(rpcLock);
+  auto lastLogIndexAndTerm = raftControl.logPersistence.getLastLogData();
+  if (lastLogIndexAndTerm.second > args->lastlogterm()) {
+    // vote not granted
+    ret->set_votegranted(false);
     ret->set_term(raftControl.electionPersistence.getTerm());
     return grpc::Status::OK;
   }
 
+  if (lastLogIndexAndTerm.second == args->lastlogterm() && lastLogIndexAndTerm.first > args->lastlogindex()) {
+    ret->set_votegranted(false);
+    ret->set_term(raftControl.electionPersistence.getTerm());
+    return grpc::Status::OK;
+  }
 
+  if (!raftControl.electionPersistence.setTermAndSetVote(args->term(), args->candidateid())) {
+    ret->set_votegranted(false);
+    ret->set_term(raftControl.electionPersistence.getTerm());
+    return grpc::Status::OK;
+  }
+
+  ret->set_votegranted(true);
+  ret->set_term(raftControl.electionPersistence.getTerm());
+
+  raftControl.toFollower();
   return grpc::Status::OK;
 }
 

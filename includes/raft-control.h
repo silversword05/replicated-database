@@ -13,6 +13,7 @@ public:
   bool candidateToLeader(uint);
   void leaderToFollower();
   bool candidateToFollower();
+  void toFollower();
   ~RaftControl() = default; // call stop on stopTokens, clear vote
 
   LogPersistence logPersistence;
