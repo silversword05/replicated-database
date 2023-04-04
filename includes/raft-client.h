@@ -17,4 +17,5 @@ public:
   void operator=(RaftClient const &) = delete;
 
   void sendRpc(uint);
+  void sendRequestVoteRpc(uint);
 };

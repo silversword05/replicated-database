@@ -51,6 +51,7 @@ public:
   void markLogSyncBit(uint, uint, bool); // index, machineId;
   void reset();
   void markSelfSyncBit();
+  std::pair<int, int> getLastLogData();
   ~LogPersistence() = default;
 
 private:

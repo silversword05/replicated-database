@@ -26,7 +26,8 @@ bool RaftControl::candidateToFollower() {
   // TODO: Wrapper to call SetVoteSetVotedFor
   {
     std::lock_guard _(stateChangeLock);
-    if(state != utils::CANDIDATE) return false;
+    if (state != utils::CANDIDATE)
+      return false;
     state = utils::FOLLOWER;
     return true;
   }
@@ -44,48 +45,59 @@ void RaftControl::leaderToFollower() {
 }
 
 bool RaftControl::candidateToLeader(uint localTerm) {
-    std::lock_guard _(stateChangeLock);
-    if(state != utils::CANDIDATE) return false;
+  std::lock_guard _(stateChangeLock);
+  if (state != utils::CANDIDATE)
+    return false;
 
-    if (localTerm != electionPersistence.getTerm())
-      return false;
-    logPersistence.reset();
-    logPersistence.markSelfSyncBit();
-    // TODO: Spawn threads
-    state = utils::LEADER;
-    return true;
+  if (localTerm != electionPersistence.getTerm())
+    return false;
+  logPersistence.reset();
+  logPersistence.markSelfSyncBit();
+  // TODO: Spawn threads
+  state = utils::LEADER;
+  return true;
 }
 
-RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId, RaftClient& raftClient_)
-    : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId), raftClient(raftClient_) {
+RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
+                         RaftClient &raftClient_)
+    : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId),
+      raftClient(raftClient_) {
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 
-  auto sleepRandom = [] {
-    std::mt19937 gen(0);
-    std::uniform_int_distribution<> dist{utils::baseSleepTime,
-                                         utils::maxSleepTime};
-    std::this_thread::sleep_for(std::chrono::milliseconds{dist(gen)});
-  };
-
-  auto performElecTimeoutCheck = [&](uint currTerm) {
-    bool expected = true;
-    if (this->heartbeatRecv.compare_exchange_strong(expected, false)) {
-      return this->electionPersistence.getTerm();
-    } else {
-      if (this->followerToCandidate(currTerm)) {
-        // TODO: Request Vote RPCs
-        // TODO: If success candidate to leader, else candidate to follower
-        // TODO: If candidate to leader fails then candidate to follower
-        return this->electionPersistence.getTerm();
-      } else {
-        return this->electionPersistence.getTerm();
-      }
-    }
-  };
-
   std::jthread timeoutThread([&]() {
     int localTerm = utils::termStart;
+
+    auto sleepRandom = [] {
+      std::mt19937 gen(0);
+      std::uniform_int_distribution<> dist{utils::baseSleepTime,
+                                           utils::maxSleepTime};
+      std::this_thread::sleep_for(std::chrono::milliseconds{dist(gen)});
+    };
+
+    auto requestVotes = [&](uint currTerm) {
+      std::vector<bool> requestStatus(utils::machineCount, false);
+      for (int i = 0; i < utils::machineCount; i++) {
+        this->raftClient;
+      }
+    };
+
+    auto performElecTimeoutCheck = [&](uint currTerm) {
+      bool expected = true;
+      if (this->heartbeatRecv.compare_exchange_strong(expected, false)) {
+        return this->electionPersistence.getTerm();
+      } else {
+        if (this->followerToCandidate(currTerm)) {
+          // TODO: Request Vote RPCs
+
+          // TODO: If success candidate to leader, else candidate to follower
+          // TODO: If candidate to leader fails then candidate to follower
+          return this->electionPersistence.getTerm();
+        } else {
+          return this->electionPersistence.getTerm();
+        }
+      }
+    };
 
     while (true) {
       if (this->state == utils::LEADER) {

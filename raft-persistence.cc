@@ -49,6 +49,17 @@ inline int LogPersistence::getLastLogIndex() {
   return (logFs.tellg() / (utils::memberVariableLog * utils::intWidth + 1)) - 1;
 }
 
+std::pair<int, int> LogPersistence::getLastLogData() {
+  std::lock_guard _(logLock);
+
+  int lastLogIndex = getLastLogIndex();
+  if(lastLogIndex == -1) return {-1, -1};
+
+  auto logEntry = readLog(uint(lastLogIndex));
+  assertm(logEntry.has_value(), "ye value hona chaiye");
+  return {lastLogIndex, logEntry.value().term};
+}
+
 std::optional<LogEntry> LogPersistence::readLog(uint logIndex) {
   std::lock_guard _(logLock);
   seekToLogIndex(logIndex);

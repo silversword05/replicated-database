@@ -30,6 +30,8 @@ void RaftClient::sendRpc(uint machineId) {
   stubVector[machineId]->RequestVote(&context, query, &response);
 }
 
+// void RaftClient::sendRequestVoteRpc(uint )
+
 // int main(int argc, char *argv[]) {
 
 //   if (argc != 2) exit(1);
