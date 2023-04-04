@@ -2,6 +2,7 @@
 
 #include <raft-client.h>
 #include <raft-persistence.h>
+#include <concurrentqueue.h>
 
 class RaftControl {
 public:
@@ -17,7 +18,7 @@ public:
   bool compareState(utils::State);
 
   void consumerFunc();
-  void followerFunc();
+  void followerFunc(uint);
   ~RaftControl() = default; // call stop on stopTokens, clear vote
 
   LogPersistence logPersistence;
@@ -25,6 +26,7 @@ public:
   RaftClient &raftClient;
   std::atomic<bool> heartbeatRecv;
 private:
+  moodycamel::ConcurrentQueue<uint> clientQueue;
   utils::State state;
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;

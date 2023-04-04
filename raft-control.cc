@@ -53,6 +53,12 @@ bool RaftControl::candidateToLeader(uint localTerm) {
   logPersistence.reset();
   logPersistence.markSelfSyncBit();
   // TODO: Spawn threads
+
+  addJthread(std::jthread([this](std::stop_token s) {
+    this->consumerFunc();
+  }));
+
+
   state = utils::LEADER;
   return true;
 }
@@ -78,7 +84,16 @@ bool RaftControl::compareState(utils::State expected) {
 }
 
 void RaftControl::consumerFunc() {
-  
+  LogEntry logEntry;
+  while(clientQueue.try_dequeue(logEntry)) {
+    logEntry.term = electionPersistence.getTerm();
+    logPersistence.appendLog(logEntry);
+  }
+  std::this_thread::yield();
+}
+
+void RaftControl::followerFunc(uint candidateId) {
+  int lastSyncIndex = logPersistence.readLastCommitIndex();
 }
 
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
