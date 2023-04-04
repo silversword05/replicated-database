@@ -12,16 +12,23 @@ message ArgsVote {
 message RetVote {
     bool voteGranted = 1;
     uint32 term = 2;
-} 
-
-message ArgsLog {
-    string message = 1;
 }
 
-message RetLog {
-    bool response = 1;
+message ArgsAppend{
+    uint32 term = 1;
+    uint32 leaderId = 2;
+    int32 prevLogIndex = 3;
+    int32 prevLogTerm = 4;
+    string entry = 5;
+    int32 leaderCommit = 6;
+}
+
+message RetAppend {
+    uint32 term = 1;
+    bool success = 2;
 }
 
 service RaftBook {
     rpc RequestVote(ArgsVote) returns (RetVote) {}
+    rpc AppendEntries(ArgsAppend) returns (RetAppend) {}
 }
