@@ -10,7 +10,7 @@ public:
   void addJthread(std::jthread &&);
   void callStopOnAllThreads();
 
-  bool followerToCandidate(uint oldTerm);
+  bool followerToCandidate(uint &oldTerm);
   bool candidateToLeader(uint);
   void leaderToFollower();
   bool candidateToFollower();
