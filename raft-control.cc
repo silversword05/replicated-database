@@ -106,9 +106,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
           return false;
         majorityCount++;
       }
-      if(majorityCount > (utils::machineCount)/2) 
-          return true;
-      return false;
+      return (majorityCount > (utils::machineCount)/2);
     };
 
     auto performElecTimeoutCheck = [&] {
