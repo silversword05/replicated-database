@@ -75,7 +75,7 @@ public:
   ElectionPersistence(const std::filesystem::path &,
                       uint); // accepts home directory path and selfId
   uint getTerm();
-  bool setTermAndSetVote(uint, uint);
+  bool setTermAndSetVote(uint, uint machineId);
   bool incrementTermAndSelfVote(uint);
   std::optional<uint> getVotedFor();
   uint writeVotedFor(uint);

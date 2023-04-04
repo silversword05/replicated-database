@@ -17,10 +17,10 @@ message RetVote {
 message ArgsAppend{
     uint32 term = 1;
     uint32 leaderId = 2;
-    int32 prevLogIndex = 3;
+    uint32 logIndex = 3;
     int32 prevLogTerm = 4;
     string entry = 5;
-    int32 leaderCommit = 6;
+    int32 leaderCommitIndex = 6;
 }
 
 message RetAppend {
