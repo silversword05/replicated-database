@@ -91,7 +91,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
 
     auto requestVotes = [&] {
       uint majorityCount  = 0;
-      for (int i = 0; i < utils::machineCount; i++) {
+      for (uint i = 0; i < utils::machineCount; i++) {
         auto [index, term] = this->logPersistence.getLastLogData();
         auto voteGranted = this->raftClient.sendRequestVoteRpc(localTerm, selfId, index, term);
         if(!voteGranted.has_value())
