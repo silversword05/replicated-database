@@ -34,6 +34,11 @@ struct LogEntry {
 
     return *this;
   }
+
+  void fillDummyEntry() {
+    key = std::pow(10, utils::intWidth) - 1;
+    val = std::pow(10, utils::intWidth) - 1;
+  }
 };
 
 class LogPersistence {
