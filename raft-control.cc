@@ -65,7 +65,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 
-  std::jthread timeoutThread([&]() {
+  std::jthread timeoutThread([this, selfId]() {
     int localTerm = utils::termStart;
 
     auto sleepRandom = [] {
@@ -75,23 +75,34 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
       std::this_thread::sleep_for(std::chrono::milliseconds{dist(gen)});
     };
 
-    auto requestVotes = [&](uint currTerm) {
-      std::vector<bool> requestStatus(utils::machineCount, false);
+    auto requestVotes = [&] {
+      uint majorityCount  = 0;
       for (int i = 0; i < utils::machineCount; i++) {
-        this->raftClient;
+        auto [index, term] = this->logPersistence.getLastLogData();
+        auto voteGranted = this->raftClient.sendRequestVoteRpc(localTerm, selfId, index, term);
+        if(!voteGranted.has_value())
+          continue;
+        if(!voteGranted.value())
+          return false;
+        majorityCount++;
+        if(majorityCount >= (utils::machineCount)/2) 
+          return true;
       }
+      return false;
     };
 
-    auto performElecTimeoutCheck = [&](uint currTerm) {
+    auto performElecTimeoutCheck = [&] {
       bool expected = true;
       if (this->heartbeatRecv.compare_exchange_strong(expected, false)) {
         return this->electionPersistence.getTerm();
       } else {
-        if (this->followerToCandidate(currTerm)) {
-          // TODO: Request Vote RPCs
-
-          // TODO: If success candidate to leader, else candidate to follower
-          // TODO: If candidate to leader fails then candidate to follower
+        if (this->followerToCandidate(localTerm)) {
+          if(requestVotes()) {
+            if(!this->candidateToLeader(localTerm))
+              this->candidateToFollower();
+          } else {
+            this->candidateToFollower();
+          }
           return this->electionPersistence.getTerm();
         } else {
           return this->electionPersistence.getTerm();
@@ -105,7 +116,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
         sleepRandom();
       }
 
-      localTerm = performElecTimeoutCheck(localTerm);
+      localTerm = performElecTimeoutCheck();
       sleepRandom();
     }
   });
