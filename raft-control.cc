@@ -58,6 +58,20 @@ bool RaftControl::candidateToLeader(uint localTerm) {
   return true;
 }
 
+void RaftControl::toFollower() {
+  std::lock_guard _(stateChangeLock);
+  if (state == utils::FOLLOWER) return;
+  if (state == utils::LEADER) {
+    leaderToFollower();
+    return;
+  }
+  if (state == utils::CANDIDATE) {
+    candidateToFollower();
+    return;
+  }
+  assertm(false, "konsa naya state hai");
+}
+
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
                          RaftClient &raftClient_)
     : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId),
