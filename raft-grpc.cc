@@ -67,10 +67,10 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
   }
 
   if (args->entry().empty()) { // empty heartbeat
-    raftControl.logPersistence.checkEmptyHeartbeat(
+    auto writeSuccess = raftControl.logPersistence.checkEmptyHeartbeat(
         args->logindex(), args->leadercommitindex(), args->prevlogterm());
     ret->set_term(raftControl.electionPersistence.getTerm());
-    ret->set_success(true);
+    ret->set_success(writeSuccess);
     return grpc::Status::OK;
   }
 

@@ -118,8 +118,7 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
           logEntry.value().getString(), logPersistence.readLastCommitIndex(),
           candidateId);
       if (syncSuccess.has_value() && syncSuccess.value()) {
-        auto shouldCommit =
-            (localTerm == logEntry.value().term);
+        auto shouldCommit = (localTerm == logEntry.value().term);
         logPersistence.markLogSyncBit(lastSyncIndex, candidateId, shouldCommit);
         lastSyncIndex++;
       } else if (syncSuccess.has_value() && !syncSuccess.value()) {
@@ -127,9 +126,12 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
       }
     } else {
       // blank heartbeat
-      raftClient.sendAppendEntryRpc(localTerm, selfId, lastSyncIndex, -1, "",
-                                    logPersistence.readLastCommitIndex(),
-                                    candidateId);
+      auto syncSuccess = raftClient.sendAppendEntryRpc(
+          localTerm, selfId, lastSyncIndex, -1, "",
+          logPersistence.readLastCommitIndex(), candidateId);
+      if (syncSuccess.has_value() && !syncSuccess.value()) {
+        lastSyncIndex--;
+      }
     }
     std::this_thread::sleep_for(
         std::chrono::milliseconds{utils::followerSleep});
