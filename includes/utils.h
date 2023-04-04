@@ -5,6 +5,7 @@
 #include <chrono>
 
 #define assertm(exp, msg) assert(((void)msg, exp))
+#define PRINT(...) utils::print("[INFO] :", std::this_thread::get_id(), ": " ,__PRETTY_FUNCTION__, " ", __VA_ARGS__)
 
 namespace utils {
 constexpr auto server_address = "localhost:50051";
@@ -45,7 +46,6 @@ inline std::string getAddress(uint machineId) {
   return getHostName(machineId) + ":5005" + std::to_string(machineId);
 }
 
-//   utils::print("INFO", 2.0, 1, 4);
 inline void print() { std::cout << std::endl; }
 template <typename T> inline void print(const T &t) { std::cout << t << std::endl; }
 template <typename First, typename... Rest>
