@@ -1,6 +1,6 @@
 #include <raft-client.h>
-#include <raft-server.h>
 #include <raft-persistence.h>
+#include <raft-server.h>
 
 RaftClient::RaftClient() {
   for (uint i = 0; i < utils::machineCount; i++) {
@@ -51,8 +51,8 @@ RaftServer::RequestVote(::grpc::ServerContext *,
 
 ::grpc::Status
 RaftServer::AppendEntries(::grpc::ServerContext *,
-                        const ::replicateddatabase::ArgsAppend *args,
-                        ::replicateddatabase::RetAppend *ret) {
+                          const ::replicateddatabase::ArgsAppend *args,
+                          ::replicateddatabase::RetAppend *ret) {
   std::lock_guard _(rpcLock);
   raftControl.heartbeatRecv.store(true);
   if (args->term() < raftControl.electionPersistence.getTerm()) {
@@ -61,11 +61,14 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
     return grpc::Status::OK;
   }
   if (args->term() > raftControl.electionPersistence.getTerm()) {
-    raftControl.electionPersistence.setTermAndSetVote(args->term(), std::numeric_limits<uint>::max());
+    raftControl.electionPersistence.setTermAndSetVote(
+        args->term(), std::numeric_limits<uint>::max());
     raftControl.toFollower();
   }
 
   if (args->entry().empty()) { // empty heartbeat
+    raftControl.logPersistence.checkEmptyHeartbeat(
+        args->logindex(), args->leadercommitindex(), args->prevlogterm());
     ret->set_term(raftControl.electionPersistence.getTerm());
     ret->set_success(true);
     return grpc::Status::OK;
@@ -73,12 +76,13 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
 
   LogEntry logEntry;
   logEntry.fromString(args->entry());
-  auto [writeSuccess, oldLogEntry] = raftControl.logPersistence.checkAndWriteLog(args->logindex(),
-                                                       logEntry,
-                                                       args->leadercommitindex(),
-                                                       args->prevlogterm());
-  if (writeSuccess){
-    // TODO: send negative ack to client of oldlogentry (logRet.second), check oldentry hasvalue
+  auto [writeSuccess, oldLogEntry] =
+      raftControl.logPersistence.checkAndWriteLog(args->logindex(), logEntry,
+                                                  args->leadercommitindex(),
+                                                  args->prevlogterm());
+  if (writeSuccess) {
+    // TODO: send negative ack to client of oldlogentry (logRet.second), check
+    // oldentry hasvalue
     ret->set_term(raftControl.electionPersistence.getTerm());
     ret->set_success(true);
     return grpc::Status::OK;
@@ -107,11 +111,10 @@ std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint selfId,
   return response.votegranted();
 }
 
-std::optional<bool> RaftClient::sendAppendEntryRpc(uint term, uint selfId,
-                                                   uint logIndex,
-                                                   int prevLogTerm,
-                                                   std::string logString,
-                                                   int leaderCommitIndex, uint toId) {
+std::optional<bool>
+RaftClient::sendAppendEntryRpc(uint term, uint selfId, uint logIndex,
+                               int prevLogTerm, std::string logString,
+                               int leaderCommitIndex, uint toId) {
   assertm(selfId < utils::machineCount, "nayi machine");
   grpc::ClientContext context;
   replicateddatabase::ArgsAppend query;

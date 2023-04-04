@@ -52,6 +52,7 @@ public:
   std::vector<LogEntry> readLogRange(uint, uint);
   std::pair<bool, std::optional<LogEntry>>
   checkAndWriteLog(uint, const LogEntry &, int, uint);
+  bool checkEmptyHeartbeat(uint, int, uint);
   int readLastCommitIndex();
   void markLogSyncBit(uint, uint, bool); // index, machineId;
   void reset();

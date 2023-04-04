@@ -23,8 +23,9 @@ void LogPersistence::markSelfSyncBit() {
   readLastCommitIndex();
   std::unique_lock _2(lastCommitIndexLock);
 
-  for(int i=lastCommitIndexCache; i<=getLastLogIndex(); i++) {
-    if(i==-1) continue;
+  for (int i = lastCommitIndexCache; i <= getLastLogIndex(); i++) {
+    if (i == -1)
+      continue;
     markLogSyncBit(i, selfId, true);
   }
 }
@@ -40,7 +41,8 @@ void LogPersistence::appendLog(const LogEntry &logEntry) {
 inline void LogPersistence::seekToLogIndex(uint logIndex) {
   std::lock_guard _(logLock);
   logFs.clear(); // to make sure that reset eof bit if previously set
-  logFs.seekg(logIndex * (utils::memberVariableLog * utils::intWidth + 1), std::ios::beg);
+  logFs.seekg(logIndex * (utils::memberVariableLog * utils::intWidth + 1),
+              std::ios::beg);
 }
 
 inline int LogPersistence::getLastLogIndex() {
@@ -53,7 +55,8 @@ std::pair<int, int> LogPersistence::getLastLogData() {
   std::lock_guard _(logLock);
 
   int lastLogIndex = getLastLogIndex();
-  if(lastLogIndex == -1) return {-1, -1};
+  if (lastLogIndex == -1)
+    return {-1, -1};
 
   auto logEntry = readLog(uint(lastLogIndex));
   assertm(logEntry.has_value(), "ye value hona chaiye");
@@ -98,7 +101,8 @@ LogPersistence::checkAndWriteLog(uint logIndex, const LogEntry &logEntry,
   int probableCommitIndex = std::min(leaderLastCommitIndex, (int)logIndex);
   std::lock_guard _(logLock);
   if (int(logIndex) <= readLastCommitIndex()) {
-    assertm(readLog(logIndex).value().term == logEntry.term, "log entry dont match when leaderLastCommitIndex small");
+    assertm(readLog(logIndex).value().term == logEntry.term,
+            "log entry dont match when leaderLastCommitIndex small");
     return {true, {}};
   }
   if (logIndex == 0)
@@ -107,9 +111,24 @@ LogPersistence::checkAndWriteLog(uint logIndex, const LogEntry &logEntry,
   auto lastToOneEntry = readLog(logIndex - 1);
   if (!lastToOneEntry.has_value())
     return {false, {}};
-  if(lastToOneEntry.value().term != prevTerm)
+  if (lastToOneEntry.value().term != prevTerm)
     return {false, {}};
   return {true, writeLog(logIndex, logEntry, probableCommitIndex)};
+}
+
+bool LogPersistence::checkEmptyHeartbeat(uint logIndex,
+                                         int leaderLastCommitIndex,
+                                         uint prevTerm) {
+  assertm(logIndex > 0, "Ek dummy to mangta he");
+  std::lock_guard _(logLock);
+  assertm(int(logIndex) > readLastCommitIndex(), "Hona nahi chaiye ye unhoni");
+  auto lastToOneEntry = readLog(logIndex - 1);
+  if(!lastToOneEntry.has_value())
+    return false;
+  if (lastToOneEntry.value().term != prevTerm)
+    return false;
+  updateLastCommitIndex(leaderLastCommitIndex);
+  return true;
 }
 
 int LogPersistence::readLastCommitIndex() {
@@ -130,7 +149,8 @@ int LogPersistence::readLastCommitIndex() {
   }
 }
 
-void LogPersistence::markLogSyncBit(uint logIndex, uint machineId, bool updateLastCommit) {
+void LogPersistence::markLogSyncBit(uint logIndex, uint machineId,
+                                    bool updateLastCommit) {
   assertm(machineId < utils::machineCount, "Ye kon sa naya machine uga diya");
   std::lock_guard _(syncLock);
   auto &majorityVote = logSync[logIndex];
@@ -231,7 +251,8 @@ bool ElectionPersistence::setTermAndSetVote(
   {
     std::fstream fs(termFsPath, std::ios::in | std::ios::out);
     if (fs >> termCache)
-      if (termCache >= term) return false;
+      if (termCache >= term)
+        return false;
   }
 
   writeTermAndVote(term, machineId);
@@ -246,7 +267,7 @@ bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
   assertm(termCache >= oldTerm, "bsdk election ho gaya he");
   if (termCache == oldTerm) {
     fs.close();
-    writeTermAndVote(oldTerm+1, selfId);
+    writeTermAndVote(oldTerm + 1, selfId);
     return true;
   }
   return false;
