@@ -8,7 +8,7 @@ void RaftControl::callStopOnAllThreads() {
   jthreadVector.clear();
 }
 
-bool RaftControl::followerToCandidate(uint oldTerm) {
+bool RaftControl::followerToCandidate(uint &oldTerm) {
   assertm(state == utils::FOLLOWER, "Follower nahi tha");
 
   {
@@ -16,6 +16,7 @@ bool RaftControl::followerToCandidate(uint oldTerm) {
     auto termIncSuccess = electionPersistence.incrementTermAndSelfVote(oldTerm);
     if (!termIncSuccess)
       return termIncSuccess;
+    oldTerm++;
     state = utils::CANDIDATE;
     return termIncSuccess;
   }
@@ -89,7 +90,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   state = utils::FOLLOWER;
 
   std::jthread timeoutThread([this, selfId]() {
-    int localTerm = this->electionPersistence.getTerm();
+    uint localTerm = this->electionPersistence.getTerm();
 
     auto sleepRandom = [] {
       std::mt19937 gen(0);
@@ -122,7 +123,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
       } else {
         if (this->followerToCandidate(localTerm)) {
           if (requestVotes()) {
-            if (!this->candidateToLeader(localTerm + 1))
+            if (!this->candidateToLeader(localTerm))
               assertm(!this->candidateToFollower(),
                       "Pahele to candidate baan jana chaiye");
           } else {
@@ -145,11 +146,3 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   });
   timeoutThread.detach();
 }
-
-// line 129 localTerm+1
-// correct emum order
-// force delete
-// proper log functions
-// else in timeout thread while true loop
-// remove sleepRandom inside if
-// line 93 get Term

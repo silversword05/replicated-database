@@ -16,8 +16,8 @@ constexpr uint intWidth = 4;
 constexpr uint memberVariableLog = 5;
 constexpr uint machineCount = 3;
 constexpr uint termStart = 1;
-constexpr uint baseSleepTime = 1000;
-constexpr uint maxSleepTime = 2000;
+constexpr uint baseSleepTime = 5000;
+constexpr uint maxSleepTime = 10000;
 constexpr bool forceLocalHost = true;
 constexpr bool cleanStart = true;
 
