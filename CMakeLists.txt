@@ -25,7 +25,7 @@ target_include_directories(${SERVER_EXECUTABLE_NAME} PRIVATE ${CMAKE_CURRENT_SOU
 target_link_libraries(${SERVER_EXECUTABLE_NAME} PRIVATE myproto)
 
 set(CLIENT_EXECUTABLE_NAME client-service)
-add_executable(${CLIENT_EXECUTABLE_NAME} client-server.cc)
+add_executable(${CLIENT_EXECUTABLE_NAME} client-service.cc)
 target_compile_options(${CLIENT_EXECUTABLE_NAME} PRIVATE ${COMPILE_OPTIONS})
 target_compile_features(${CLIENT_EXECUTABLE_NAME} PRIVATE ${COMPILE_FEATURES})
 target_include_directories(${CLIENT_EXECUTABLE_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/includes)
