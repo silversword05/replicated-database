@@ -66,7 +66,7 @@ std::optional<LogEntry> LogPersistence::readLog(uint logIndex) {
   std::string line;
   if (std::getline(logFs, line))
     return LogEntry().fromString(line);
-  assertm(bool(logFs), "Bhai read fail ho gaya!!");
+  // assertm(bool(logFs), "Bhai read fail ho gaya!!");
   return {};
 }
 
@@ -120,7 +120,7 @@ int LogPersistence::readLastCommitIndex() {
     lastCommitIndexFs.seekg(0, std::ios::beg);
     if (lastCommitIndexFs >> lastCommitIndexCache)
       return lastCommitIndexCache;
-    assertm(bool(lastCommitIndexFs), "Bhai read fail ho gaya!!");
+    // assertm(bool(lastCommitIndexFs), "Bhai read fail ho gaya!!");
     lastCommitIndexCache = -1;
     return lastCommitIndexCache;
   }
@@ -171,7 +171,7 @@ uint ElectionPersistence::getTerm() {
       assertm(bool(ifs), "Bhai file khula nahi, term wala");
       if (ifs >> termCache)
         return termCache;
-      assertm(bool(ifs), "Bhai read fail ho gaya!!");
+      // assertm(bool(ifs), "Bhai read fail ho gaya!!");
     }
     {
       std::ofstream ofs(termFsPath);
@@ -189,7 +189,7 @@ std::optional<uint> ElectionPersistence::getVotedFor() {
   uint votedFor;
   if (ifs >> votedFor)
     return votedFor;
-  assertm(bool(ifs), "Bhai read fail ho gaya!!");
+  // assertm(bool(ifs), "Bhai read fail ho gaya!!");
   return {};
 }
 

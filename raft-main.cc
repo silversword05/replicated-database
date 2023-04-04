@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   uint selfId = std::stoi(argv[1]);
 
-  auto homeDir = std::filesystem::path("~/raft-home/raft" + std::to_string(selfId));
+  auto homeDir = utils::home_dir / "raft-home/raft" / std::to_string(selfId);
   std::filesystem::create_directories(homeDir);
 
   RaftClient raftClient;
