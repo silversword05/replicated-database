@@ -59,7 +59,7 @@ bool RaftControl::candidateToLeader(uint localTerm) {
     if (i == selfId)
       continue;
     addJthread(std::jthread(
-        [this, i](std::stop_token s) { this->followerFunc(i, s); }));
+        [this, i, localTerm](std::stop_token s) { this->followerFunc(localTerm, i, s); }));
   }
   state = utils::LEADER;
   return true;

@@ -1,5 +1,6 @@
 #include <raft-client.h>
 #include <raft-server.h>
+#include <raft-persistence.h>
 
 RaftClient::RaftClient() {
   for (uint i = 0; i < utils::machineCount; i++) {
@@ -50,8 +51,40 @@ RaftServer::RequestVote(::grpc::ServerContext *,
 
 ::grpc::Status
 RaftServer::AppendEntries(::grpc::ServerContext *,
-                          const ::replicateddatabase::ArgsAppend *args,
-                          ::replicateddatabase::RetAppend *ret) {
+                        const ::replicateddatabase::ArgsAppend *args,
+                        ::replicateddatabase::RetAppend *ret) {
+  std::lock_guard _(rpcLock);
+  raftControl.heartbeatRecv.store(true);
+  if (args->term() < raftControl.electionPersistence.getTerm()) {
+    ret->set_term(raftControl.electionPersistence.getTerm());
+    ret->set_success(false);
+    return grpc::Status::OK;
+  }
+  if (args->term() > raftControl.electionPersistence.getTerm()) {
+    raftControl.electionPersistence.setTermAndSetVote(args->term(), std::numeric_limits<uint>::max());
+    raftControl.toFollower();
+  }
+
+  if (args->entry().empty()) { // empty heartbeat
+    ret->set_term(raftControl.electionPersistence.getTerm());
+    ret->set_success(true);
+    return grpc::Status::OK;
+  }
+
+  LogEntry logEntry;
+  logEntry.fromString(args->entry());
+  auto [writeSuccess, oldLogEntry] = raftControl.logPersistence.checkAndWriteLog(args->logindex(),
+                                                       logEntry,
+                                                       args->leadercommitindex(),
+                                                       args->prevlogterm());
+  if (writeSuccess){
+    // TODO: send negative ack to client of oldlogentry (logRet.second)
+    ret->set_term(raftControl.electionPersistence.getTerm());
+    ret->set_success(true);
+    return grpc::Status::OK;
+  }
+  ret->set_term(raftControl.electionPersistence.getTerm());
+  ret->set_success(false);
   return grpc::Status::OK;
 }
 
@@ -89,7 +122,7 @@ std::optional<bool> RaftClient::sendAppendEntryRpc(uint term, uint selfId,
   query.set_logindex(logIndex);
   query.set_prevlogterm(prevLogTerm);
   query.set_entry(logString);
-  query.set_leadercommit(leaderCommitIndex);
+  query.set_leadercommitindex(leaderCommitIndex);
 
   auto status = stubVector[toId]->AppendEntries(&context, query, &response);
   if (!status.ok())
