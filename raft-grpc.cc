@@ -43,17 +43,24 @@ RaftServer::RequestVote(::grpc::ServerContext *,
   return grpc::Status::OK;
 }
 
-void RaftClient::sendRpc(uint machineId) {
-  assertm(machineId < utils::machineCount, "nayi machine");
+std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint candidateId, int lastLogIndex, int lastLogTerm) {
+  assertm(candidateId < utils::machineCount, "nayi machine");
   grpc::ClientContext context;
   replicateddatabase::ArgsVote query;
   replicateddatabase::RetVote response;
 
-  query.set_term(0);
-  stubVector[machineId]->RequestVote(&context, query, &response);
+  query.set_term(term);
+  query.set_candidateid(candidateId);
+  query.set_lastlogindex(lastLogIndex);
+  query.set_lastlogterm(lastLogTerm);
+
+  auto status = stubVector[candidateId]->RequestVote(&context, query, &response);
+  if(!status.ok())
+    return {};
+  return response.votegranted();
 }
 
-// void RaftClient::sendRequestVoteRpc(uint )
+
 
 // int main(int argc, char *argv[]) {
 
