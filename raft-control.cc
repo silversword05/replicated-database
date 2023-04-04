@@ -5,8 +5,7 @@ void RaftControl::addJthread(std::jthread &&thread) {
 }
 
 void RaftControl::callStopOnAllThreads() {
-  for (auto &thread : jthreadVector)
-    thread.request_stop();
+  jthreadVector.clear();
 }
 
 bool RaftControl::followerToCandidate(uint oldTerm) {
@@ -76,6 +75,10 @@ void RaftControl::toFollower() {
 bool RaftControl::compareState(utils::State expected) {
   std::lock_guard _(stateChangeLock);
   return state == expected;
+}
+
+void RaftControl::consumerFunc() {
+  
 }
 
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
