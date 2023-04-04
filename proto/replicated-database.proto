@@ -23,6 +23,28 @@ message ArgsAppend{
     int32 leaderCommitIndex = 6;
 }
 
+message ArgsAck {
+    uint32 clientId = 1;
+    uint32 reqNo = 2;
+    bool processed = 3;
+}
+
+message RetAck {
+    bool idontcare = 1;
+}
+
+message ArgsRequest {
+    uint32 clientId = 1;
+    uint32 reqNo = 2;
+    uint32 key = 3;
+    uint32 val = 4;
+
+}
+
+message RetRequest {
+
+}
+
 message RetAppend {
     uint32 term = 1;
     bool success = 2;
@@ -31,4 +53,8 @@ message RetAppend {
 service RaftBook {
     rpc RequestVote(ArgsVote) returns (RetVote) {}
     rpc AppendEntries(ArgsAppend) returns (RetAppend) {}
+}
+
+service ClientBook {
+    rpc ClientAck(ArgsAck) returns (RetAck) {}
 }
