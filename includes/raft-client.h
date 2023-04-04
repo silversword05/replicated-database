@@ -16,5 +16,5 @@ public:
   RaftClient(RaftClient const &) = delete;
   void operator=(RaftClient const &) = delete;
 
-  std::optional<bool> sendRequestVoteRpc(uint, uint, int, int);
+  std::optional<bool> sendRequestVoteRpc(uint, uint, int, int, uint);
 };

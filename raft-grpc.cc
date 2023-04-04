@@ -16,15 +16,17 @@ RaftServer::RequestVote(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsVote *args,
                         ::replicateddatabase::RetVote *ret) {
   std::lock_guard _(rpcLock);
-  auto lastLogIndexAndTerm = raftControl.logPersistence.getLastLogData();
-  if (lastLogIndexAndTerm.second > args->lastlogterm()) {
+  raftControl.heartbeatRecv.store(true);
+  
+  auto [lastLogIndex, lastLogTerm] = raftControl.logPersistence.getLastLogData();
+  if (lastLogTerm > args->lastlogterm()) {
     // vote not granted
     ret->set_votegranted(false);
     ret->set_term(raftControl.electionPersistence.getTerm());
     return grpc::Status::OK;
   }
 
-  if (lastLogIndexAndTerm.second == args->lastlogterm() && lastLogIndexAndTerm.first > args->lastlogindex()) {
+  if (lastLogTerm == args->lastlogterm() && lastLogIndex > args->lastlogindex()) {
     ret->set_votegranted(false);
     ret->set_term(raftControl.electionPersistence.getTerm());
     return grpc::Status::OK;
@@ -47,21 +49,21 @@ RaftServer::RequestVote(::grpc::ServerContext *,
 RaftServer::AppendEntries(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsAppend *args,
                         ::replicateddatabase::RetAppend *ret) {
-
+  return grpc::Status::OK;
 }
 
-std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint candidateId, int lastLogIndex, int lastLogTerm) {
-  assertm(candidateId < utils::machineCount, "nayi machine");
+std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint selfId, int lastLogIndex, int lastLogTerm, uint toId) {
+  assertm(selfId < utils::machineCount, "nayi machine");
   grpc::ClientContext context;
   replicateddatabase::ArgsVote query;
   replicateddatabase::RetVote response;
 
   query.set_term(term);
-  query.set_candidateid(candidateId);
+  query.set_candidateid(selfId);
   query.set_lastlogindex(lastLogIndex);
   query.set_lastlogterm(lastLogTerm);
 
-  auto status = stubVector[candidateId]->RequestVote(&context, query, &response);
+  auto status = stubVector[toId]->RequestVote(&context, query, &response);
   if(!status.ok())
     return {};
   return response.votegranted();
