@@ -18,6 +18,7 @@ constexpr uint termStart = 1;
 constexpr uint baseSleepTime = 1000;
 constexpr uint maxSleepTime = 2000;
 constexpr bool forceLocalHost = true;
+constexpr bool cleanStart = true;
 
 enum State { FOLLOWER, CANDIDATE, LEADER };
 
@@ -42,5 +43,14 @@ inline std::string getAddress(uint machineId) {
   if constexpr (forceLocalHost)
     return "localhost:5005" + std::to_string(machineId);
   return getHostName(machineId) + ":5005" + std::to_string(machineId);
+}
+
+//   utils::print("INFO", 2.0, 1, 4);
+template <typename T> void print(const T &t) { std::cout << t << std::endl; }
+
+template <typename First, typename... Rest>
+void print(const First &first, const Rest &...rest) {
+  std::cout << first << " ";
+  print(rest...); // recursive call using pack expansion syntax
 }
 } // namespace utils

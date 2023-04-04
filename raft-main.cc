@@ -1,5 +1,5 @@
-#include <raft-server.h>
 #include <raft-client.h>
+#include <raft-server.h>
 
 int main(int argc, char *argv[]) {
   if (argc != 2)
@@ -7,12 +7,12 @@ int main(int argc, char *argv[]) {
   uint selfId = std::stoi(argv[1]);
 
   auto homeDir = utils::home_dir / "raft-home/raft" / std::to_string(selfId);
+  if constexpr (utils::cleanStart)
+    std::filesystem::remove_all(homeDir);
   std::filesystem::create_directories(homeDir);
 
   RaftClient raftClient;
-  RaftControl raftControl(
-      homeDir,
-      selfId, raftClient);
+  RaftControl raftControl(homeDir, selfId, raftClient);
 
   grpc::ServerBuilder builder;
   RaftServer raftServer(raftControl);
