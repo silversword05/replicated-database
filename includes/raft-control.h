@@ -15,11 +15,11 @@ public:
   bool candidateToFollower();
   ~RaftControl() = default; // call stop on stopTokens, clear vote
 
-private:
-  utils::State state;
   LogPersistence logPersistence;
   ElectionPersistence electionPersistence;
   RaftClient &raftClient;
+private:
+  utils::State state;
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;
   std::atomic<bool> heartbeatRecv;

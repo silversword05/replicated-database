@@ -15,8 +15,16 @@ RaftServer::RaftServer(RaftControl &raftControl_) : raftControl(raftControl_) {}
 RaftServer::RequestVote(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsVote *args,
                         ::replicateddatabase::RetVote *ret) {
-  std::cout << "In request vote " << args->term() << std::endl;
-  ret->set_term(0);
+  std::lock_guard _(requestVoteLock);
+  auto lastLogIndexAndTerm = raftControl.logPersistence;
+  if (lastLogIndexAndTerm.term > args->lastLogTerm()) {
+    // cant vote
+    ret->set_voteGranted(false);
+    ret->set_term(raftControl.electionPersistence.getTerm());
+    return grpc::Status::OK;
+  }
+
+
   return grpc::Status::OK;
 }
 

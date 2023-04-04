@@ -10,6 +10,7 @@
 
 class RaftServer final : public ::replicateddatabase::RaftBook::Service {
   RaftControl &raftControl;
+  std::recursive_mutex requestVoteLock;
 
 public:
   RaftServer(RaftControl &);
