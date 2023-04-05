@@ -14,7 +14,7 @@ enum TokenState { WAITING, SUCCESS, FAIL };
 class ClientServer final : public ::replicateddatabase::ClientBook::Service {
 public:
   std::unordered_map<uint, TokenState> tokenSet;
-  
+
   ClientServer() = default;
   virtual ::grpc::Status ClientAck(::grpc::ServerContext *,
                                    const ::replicateddatabase::ArgsAck *,
@@ -36,6 +36,6 @@ public:
 
   bool putBlocking(uint, uint);
   std::optional<uint> put(uint, uint);
-  bool checkPutDone(uint);
+  std::optional<bool> checkPutDone(uint);
   std::optional<uint> get(uint);
 };
