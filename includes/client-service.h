@@ -1,16 +1,41 @@
 #pragma once
 
 #include <grpc/grpc.h>
+#include <grpcpp/create_channel.h>
 #include <grpcpp/server_builder.h>
 
 #include <replicated-database.grpc.pb.h>
 #include <replicated-database.pb.h>
 
-class ClientServer final : public ::replicateddatabase::ClientBook::Service {
+#include <utils.h>
 
+enum TokenState { WAITING, SUCCESS, FAIL };
+
+class ClientServer final : public ::replicateddatabase::ClientBook::Service {
 public:
+  std::unordered_map<uint, TokenState> tokenSet;
+  
   ClientServer() = default;
   virtual ::grpc::Status ClientAck(::grpc::ServerContext *,
                                    const ::replicateddatabase::ArgsAck *,
                                    ::replicateddatabase::RetAck *);
+};
+
+class ClientService {
+  std::vector<std::unique_ptr<replicateddatabase::RaftBook::Stub>> stubVector;
+  std::jthread serverThread;
+  uint reqNo;
+  uint clientId;
+
+public:
+  ClientServer server;
+
+  ClientService(uint);
+  std::optional<uint> sendClientRequestRPC(uint, uint, uint, uint, std::string, uint);
+
+
+  bool putBlocking(uint, uint);
+  std::optional<uint> put(uint, uint);
+  bool checkPutDone(uint);
+  std::optional<uint> get(uint);
 };
