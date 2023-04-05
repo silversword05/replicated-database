@@ -20,7 +20,7 @@ public:
 
   void consumerFunc(const std::stop_token &);
   void followerFunc(uint, uint, const std::stop_token &);
-  void stateSyncFunc(const std::stop_token &s);
+  void stateSyncFunc();
   ~RaftControl() = default; // call stop on stopTokens, clear vote
 
   LogPersistence logPersistence;

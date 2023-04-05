@@ -71,8 +71,6 @@ bool RaftControl::candidateToLeader(uint localTerm) {
       this->followerFunc(localTerm, i, s);
     }));
   }
-  addJthread(
-      std::jthread([this](std::stop_token s) { this->stateSyncFunc(s); }));
   state = utils::LEADER;
   return true;
 }
@@ -185,14 +183,14 @@ void RaftControl::applyLog(bool sendAck) {
                              true);
 }
 
-void RaftControl::stateSyncFunc(const std::stop_token &s) {
-  while (!s.stop_requested()) {
+void RaftControl::stateSyncFunc() {
+  while(true) {
     while (syncStart <= logPersistence.readLastCommitIndex()) {
       applyLog(true);
       syncStart++;
     }
     std::this_thread::yield();
-  }
+  } 
 }
 
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
@@ -203,6 +201,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   state = utils::FOLLOWER;
 
   initialStateSync();
+  std::jthread([this]() { this->stateSyncFunc(); });
 
   std::jthread timeoutThread([this, selfId]() {
     uint localTerm = this->electionPersistence.getTerm();
