@@ -71,6 +71,8 @@ bool RaftControl::candidateToLeader(uint localTerm) {
       this->followerFunc(localTerm, i, s);
     }));
   }
+  addJthread(
+      std::jthread([this](std::stop_token s) { this->stateSyncFunc(s); }));
   state = utils::LEADER;
   return true;
 }
@@ -163,24 +165,33 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
   }
 }
 
-int RaftControl::initialStateSync() {
+void RaftControl::initialStateSync() {
   int lastCommitIndex = logPersistence.readLastCommitIndex();
-  for (int i = 0; i <= lastCommitIndex; i++) {
-    auto logEntry = logPersistence.readLog(i);
-    assertm(logEntry.has_value(), "ye logs honi chaiye");
-    if (logEntry.value().isDummy())
-      continue;
-    // TODO: Apply on State machine
-    utils::print("Applying log", logEntry.value().getString());
+  syncStart = 0;
+  for (; syncStart <= lastCommitIndex; syncStart++) {
+    applyLog(false);
   }
-  return lastCommitIndex;
+}
+
+void RaftControl::applyLog(bool sendAck) {
+  auto logEntry = logPersistence.readLog(syncStart);
+  assertm(logEntry.has_value(), "ye logs honi chaiye");
+  if (logEntry.value().isDummy())
+    return;
+  // TODO: Apply on State machine
+  utils::print("Applying log", logEntry.value().getString());
+  if (sendAck)
+    raftClient.sendClientAck(logEntry.value().clientId, logEntry.value().reqNo,
+                             true);
 }
 
 void RaftControl::stateSyncFunc(const std::stop_token &s) {
-  int lastSyncIndex = syncStart;
-  int lastCommitIndex = logPersistence.readLastCommitIndex();
   while (!s.stop_requested()) {
-    lastSyncIndex++;
+    while (syncStart <= logPersistence.readLastCommitIndex()) {
+      applyLog(true);
+      syncStart++;
+    }
+    std::this_thread::yield();
   }
 }
 
@@ -191,7 +202,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 
-  syncStart = initialStateSync();
+  initialStateSync();
 
   std::jthread timeoutThread([this, selfId]() {
     uint localTerm = this->electionPersistence.getTerm();

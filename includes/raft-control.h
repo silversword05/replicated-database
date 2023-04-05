@@ -30,7 +30,8 @@ public:
 
 private:
   void clearQueue();
-  int initialStateSync();
+  void initialStateSync();
+  void applyLog(bool);
 
   moodycamel::ConcurrentQueue<LogEntry> clientQueue;
   utils::State state;
