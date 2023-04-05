@@ -1,8 +1,8 @@
 #pragma once
 
+#include <concurrentqueue.h>
 #include <raft-client.h>
 #include <raft-persistence.h>
-#include <concurrentqueue.h>
 
 class RaftControl {
 public:
@@ -18,18 +18,24 @@ public:
   bool compareState(utils::State);
   bool appendClientEntry(uint, uint, uint, uint);
 
-  void consumerFunc(const std::stop_token&);
-  void followerFunc(uint, uint, const std::stop_token&);
+  void consumerFunc(const std::stop_token &);
+  void followerFunc(uint, uint, const std::stop_token &);
+  void stateSyncFunc(const std::stop_token &s);
   ~RaftControl() = default; // call stop on stopTokens, clear vote
 
   LogPersistence logPersistence;
   ElectionPersistence electionPersistence;
   RaftClient &raftClient;
   std::atomic<bool> heartbeatRecv;
+
 private:
+  void clearQueue();
+  int initialStateSync();
+
   moodycamel::ConcurrentQueue<LogEntry> clientQueue;
   utils::State state;
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;
   uint selfId;
+  int syncStart;
 };

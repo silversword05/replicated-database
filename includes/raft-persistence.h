@@ -43,6 +43,11 @@ struct LogEntry {
     key = std::pow(10, utils::intWidth) - 1;
     val = std::pow(10, utils::intWidth) - 1;
   }
+
+  bool isDummy() {
+    uint infinity = std::pow(10, utils::intWidth) - 1;
+    return (key == infinity && val == infinity);
+  }
 };
 
 class LogPersistence {
