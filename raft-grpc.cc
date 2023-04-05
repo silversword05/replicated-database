@@ -155,7 +155,7 @@ void RaftClient::sendClientAck(uint clientId, uint reqNo, bool processed) {
 
   query.set_processed(processed);
   query.set_reqno(reqNo);
-  stubMap[clientId]->ClientAck(&context, query, &response);
+  getClientStub(clientId)->ClientAck(&context, query, &response);
 }
 
 std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint selfId,
