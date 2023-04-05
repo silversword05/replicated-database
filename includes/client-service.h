@@ -31,6 +31,7 @@ public:
   ClientServer server;
 
   ClientService(uint);
+  ~ClientService();
   std::optional<uint> sendClientRequestRPC(uint, uint, uint, uint, std::string, uint);
 
 
@@ -38,4 +39,7 @@ public:
   std::optional<uint> put(uint, uint);
   std::optional<bool> checkPutDone(uint);
   std::optional<uint> get(uint);
+
+private:
+  std::unique_ptr<::grpc::Server> serverPtr;
 };

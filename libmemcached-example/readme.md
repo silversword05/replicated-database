@@ -7,13 +7,14 @@
 3. sudo apt-get install bison
 4. sudo apt-get install flex
 5. sudo apt-get install memcached
-6. Install libmemcached
+6. sudo apt-get install libmemcached-dev
+<!-- 6. Install libmemcached
     git clone https://github.com/awesomized/libmemcached.git
     mkdir build-libmemcached
     cd $_
     cmake ../libmemcached
     make -j10
-    sudo make install
+    sudo make install -->
 7. Example libmemcached
     git clone https://github.com/smerrill/libmemcached-example.git
     gcc -o example memcached.c -lmemcached

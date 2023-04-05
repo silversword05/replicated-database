@@ -1,9 +1,17 @@
 #include <client-service.h>
 
 ::grpc::Status ClientServer::ClientAck(::grpc::ServerContext *,
-                                       const ::replicateddatabase::ArgsAck *,
-                                       ::replicateddatabase::RetAck *) {
-
+                                       const ::replicateddatabase::ArgsAck *args,
+                                       ::replicateddatabase::RetAck *ret) {
+  assertm(tokenSet.contains(args->reqno()), "Request number not in the token set");
+  if (args->processed()) {
+    tokenSet[args->reqno()] = TokenState::SUCCESS;
+  }
+  else {
+    tokenSet[args->reqno()] = TokenState::FAIL;
+  }
+  ret->set_idontcare(true);
+  
   return grpc::Status::OK;
 }
 
@@ -14,13 +22,13 @@ ClientService::ClientService(uint selfId) {
   std::jthread tmp([this, selfId]() {
     grpc::ServerBuilder builder;
 
-    auto server = [&]() {
+    this->serverPtr = std::move([&]() {
       builder.AddListeningPort(utils::getAddress(selfId),
                                grpc::InsecureServerCredentials());
       builder.RegisterService(&(this->server));
       return std::unique_ptr<grpc::Server>(builder.BuildAndStart());
-    }();
-    server->Wait();
+    }());
+    this->serverPtr->Wait();
   });
 
   serverThread = std::move(tmp);
@@ -31,6 +39,10 @@ ClientService::ClientService(uint selfId) {
         replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
             utils::getAddress(i), grpc::InsecureChannelCredentials())));
   }
+}
+
+ClientService::~ClientService() {
+  serverPtr->Shutdown();
 }
 
 std::optional<uint>
@@ -100,5 +112,3 @@ std::optional<uint> ClientService::get(uint key) {
   }
   return  {};
 }
-
-int main() {}

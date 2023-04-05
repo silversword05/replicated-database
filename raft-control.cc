@@ -157,9 +157,9 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
       if (syncSuccess.has_value() && !syncSuccess.value()) {
         lastSyncIndex--;
       }
-    }
-    std::this_thread::sleep_for(
+      std::this_thread::sleep_for(
         std::chrono::milliseconds{utils::followerSleep});
+    }
   }
 }
 
