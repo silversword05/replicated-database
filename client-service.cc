@@ -87,19 +87,16 @@ std::optional<uint> ClientService::put(uint key, uint val) {
   return {};
 }
 
-bool ClientService::checkPutDone(uint requestNum) {
-  if (server.tokenSet[requestNum] == TokenState::SUCCESS) {
-    return true;
-  }
+std::optional<bool> ClientService::checkPutDone(uint requestNum) {
+  if (server.tokenSet[requestNum] == TokenState::WAITING) return {};
+  if (server.tokenSet[requestNum] == TokenState::SUCCESS) return true;
   return false;
 }
 
 std::optional<uint> ClientService::get(uint key) {
   for (uint i=0; i < utils::machineCount; i++) {
     auto ret = sendClientRequestRPC(clientId, 0, key, 0, "get", i);
-    if (ret.has_value()) {
-      return ret.value();
-    }
+    if (ret.has_value()) return ret.value();
   }
   return  {};
 }
