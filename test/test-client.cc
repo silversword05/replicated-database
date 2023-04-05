@@ -19,19 +19,18 @@ int main(int argc, char *argv[]) {
     service.put(i, i + 100);
   }
 
-  utils::print("Send some put requests now sleeping for a while");
-//   sleep(20);
+  utils::print("Send some put requests!!");
 
-//   // check if put done
-//   for (uint i = 0; i < reqs; i++) {
-//     while (true) {
-//       auto check = service.checkPutDone(i);
-//       if (check.has_value()) {
-//         utils::print("Request No: ", i, " has result: ", check.value());
-//         break;
-//       }
-//     }
-//   }
+  // check if put done
+  for (uint i = 0; i < reqs; i++) {
+    while (true) {
+      auto check = service.checkPutDone(i);
+      if (check.has_value()) {
+        utils::print("Request No: ", i, " has result: ", check.value());
+        break;
+      }
+    }
+  }
 
   return 0;
 }

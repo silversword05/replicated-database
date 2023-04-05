@@ -158,7 +158,7 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
         lastSyncIndex--;
       }
       std::this_thread::sleep_for(
-        std::chrono::milliseconds{utils::followerSleep});
+          std::chrono::milliseconds{utils::followerSleep});
     }
   }
 }
@@ -184,13 +184,13 @@ void RaftControl::applyLog(bool sendAck) {
 }
 
 void RaftControl::stateSyncFunc() {
-  while(true) {
+  while (true) {
     while (syncStart <= logPersistence.readLastCommitIndex()) {
       applyLog(true);
       syncStart++;
     }
     std::this_thread::yield();
-  } 
+  }
 }
 
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
@@ -201,7 +201,8 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   state = utils::FOLLOWER;
 
   initialStateSync();
-  std::jthread([this]() { this->stateSyncFunc(); });
+  std::jthread stateSyncThread([this]() { this->stateSyncFunc(); });
+  stateSyncThread.detach();
 
   std::jthread timeoutThread([this, selfId]() {
     uint localTerm = this->electionPersistence.getTerm();
@@ -259,5 +260,6 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
         localTerm = performElecTimeoutCheck();
     }
   });
+
   timeoutThread.detach();
 }

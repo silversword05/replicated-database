@@ -4,12 +4,23 @@
                                        const ::replicateddatabase::ArgsAck *args,
                                        ::replicateddatabase::RetAck *ret) {
   assertm(tokenSet.contains(args->reqno()), "Request number not in the token set");
-  if (args->processed()) {
-    tokenSet[args->reqno()] = TokenState::SUCCESS;
+  if (tokenSet[args->reqno()] == TokenState::WAITING) {
+    if (args->processed()) {
+      tokenSet[args->reqno()] = TokenState::SUCCESS;
+    }
+    else {
+      tokenSet[args->reqno()] = TokenState::FAIL;
+    }
   }
   else {
-    tokenSet[args->reqno()] = TokenState::FAIL;
+    if (args->processed()) {
+      assertm(tokenSet[args->reqno()] ==  TokenState::SUCCESS, "Got SUCCESS then a FAIL!!");
+    }
+    else {
+      assertm(tokenSet[args->reqno()] == TokenState::FAIL, "Got FAIL then SUCESS!!");
+    }
   }
+  
   ret->set_idontcare(true);
   
   return grpc::Status::OK;
