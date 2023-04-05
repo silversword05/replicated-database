@@ -176,6 +176,16 @@ void LogPersistence::updateLastCommitIndex(int lastCommitIndex) {
   lastCommitIndexFs.flush();
 }
 
+bool LogPersistence::isReadable(uint expectedTerm) {
+  if(expectedTerm == utils::termStart) return false;
+  std::lock_guard _(logLock);
+  int lastLogIndex = getLastLogIndex();
+  if(lastLogIndex == -1) return true;
+  auto lastEntry = readLog(lastLogIndex);
+  assertm(lastEntry.has_value(), "This should exists");
+  return (lastEntry.value().term == expectedTerm);
+}
+
 ElectionPersistence::ElectionPersistence(const std::filesystem::path &homeDir,
                                          uint selfId_)
     : selfId(selfId_) {

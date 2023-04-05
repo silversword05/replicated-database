@@ -73,10 +73,10 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
                ";entry: ", args->entry());
 
   utils::print("AppendEntries: Follower Info");
-  utils::print(
-      "term: ", raftControl.electionPersistence.getTerm(),
-      ";LastLogIndex: ", raftControl.logPersistence.getLastLogIndex(),
-      ";followerCommitIndex: ", raftControl.logPersistence.readLastCommitIndex());
+  utils::print("term: ", raftControl.electionPersistence.getTerm(),
+               ";LastLogIndex: ", raftControl.logPersistence.getLastLogIndex(),
+               ";followerCommitIndex: ",
+               raftControl.logPersistence.readLastCommitIndex());
 
   if (args->term() < raftControl.electionPersistence.getTerm()) {
     ret->set_term(raftControl.electionPersistence.getTerm());
@@ -106,6 +106,10 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
   if (writeSuccess) {
     // TODO: send negative ack to client of oldlogentry (logRet.second), check
     // oldentry hasvalue
+    if (oldLogEntry.has_value()) {
+      raftControl.raftClient.sendClientAck(oldLogEntry.value().clientId,
+                                           oldLogEntry.value().reqNo, false);
+    }
     ret->set_term(raftControl.electionPersistence.getTerm());
     ret->set_success(true);
     return grpc::Status::OK;
@@ -113,6 +117,45 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
   ret->set_term(raftControl.electionPersistence.getTerm());
   ret->set_success(false);
   return grpc::Status::OK;
+}
+
+::grpc::Status
+RaftServer::ClientRequest(::grpc::ServerContext *,
+                          const ::replicateddatabase::ArgsRequest *args,
+                          ::replicateddatabase::RetRequest *ret) {
+  if (raftControl.compareState(utils::LEADER)) {
+    if (args->type() == "put") {
+      ret->set_success(raftControl.appendClientEntry(
+          args->key(), args->val(), args->clientid(), args->reqno()));
+    } else if (args->type() == "get") {
+      ret->set_success(raftControl.logPersistence.isReadable(
+          raftControl.electionPersistence.getTerm()));
+      // TODO: Read Value from Mem Cache D if readable
+    }
+  } else {
+    ret->set_success(false);
+  }
+  return grpc::Status::OK;
+}
+
+auto &RaftClient::getClientStub(uint clientId) {
+  if (stubMap.contains(clientId))
+    return stubMap[clientId];
+  stubMap[clientId] =
+      replicateddatabase::ClientBook::NewStub(grpc::CreateChannel(
+          utils::getAddress(clientId), grpc::InsecureChannelCredentials()));
+  return stubMap[clientId];
+}
+
+void RaftClient::sendClientAck(uint clientId, uint reqNo, bool processed) {
+  assertm(clientId >= utils::machineCount, "sever he bro");
+  grpc::ClientContext context;
+  replicateddatabase::ArgsAck query;
+  replicateddatabase::RetAck response;
+
+  query.set_processed(processed);
+  query.set_reqno(reqNo);
+  stubMap[clientId]->ClientAck(&context, query, &response);
 }
 
 std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint selfId,

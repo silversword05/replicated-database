@@ -20,5 +20,8 @@ public:
   virtual ::grpc::Status AppendEntries(::grpc::ServerContext *,
                                        const ::replicateddatabase::ArgsAppend *,
                                        ::replicateddatabase::RetAppend *);
+  virtual ::grpc::Status
+  ClientRequest(::grpc::ServerContext *,
+                const ::replicateddatabase::ArgsRequest *,
+                ::replicateddatabase::RetRequest *);
 };
-

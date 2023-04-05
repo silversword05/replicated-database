@@ -94,6 +94,12 @@ bool RaftControl::compareState(utils::State expected) {
   return state == expected;
 }
 
+bool RaftControl::appendClientEntry(uint key, uint val, uint clientId,
+                                    uint reqNo) {
+  return clientQueue.try_enqueue(
+      LogEntry{.term = 0, .key = key, .val = val, .clientId = clientId, .reqNo = reqNo});
+}
+
 void RaftControl::consumerFunc(const std::stop_token &s) {
   LogEntry logEntry;
   while (clientQueue.try_dequeue(logEntry) && !s.stop_requested()) {

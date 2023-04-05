@@ -62,6 +62,7 @@ public:
   void reset();
   void markSelfSyncBit();
   std::pair<int, int> getLastLogData();
+  bool isReadable(uint);
   ~LogPersistence() = default;
 
 private:
