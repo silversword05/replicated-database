@@ -25,6 +25,11 @@ make -j 4; make install
 popd
 ```
 
+### Install LevelDB
+```
+sudo apt-get install libleveldb-dev
+```
+
 ### Run project
 ```
 cd replicated-database

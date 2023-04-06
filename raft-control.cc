@@ -176,7 +176,7 @@ void RaftControl::applyLog(bool sendAck) {
   assertm(logEntry.has_value(), "ye logs honi chaiye");
   if (logEntry.value().isDummy())
     return;
-  // TODO: Apply on State machine
+  db.put(logEntry.value().key, logEntry.value().val);
   utils::print("Applying log", logEntry.value().getString());
   if (sendAck)
     raftClient.sendClientAck(logEntry.value().clientId, logEntry.value().reqNo,
@@ -196,7 +196,7 @@ void RaftControl::stateSyncFunc() {
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
                          RaftClient &raftClient_)
     : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId),
-      raftClient(raftClient_), selfId(selfId) {
+      raftClient(raftClient_), db(homeDir), selfId(selfId) {
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 

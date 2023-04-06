@@ -37,5 +37,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  auto val = service.get(3);
+  utils::print("Retrived val ",val.value());
+
   return 0;
 }

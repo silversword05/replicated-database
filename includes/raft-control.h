@@ -3,6 +3,7 @@
 #include <concurrentqueue.h>
 #include <raft-client.h>
 #include <raft-persistence.h>
+#include <raft-leveldb.h>
 
 class RaftControl {
 public:
@@ -26,6 +27,7 @@ public:
   LogPersistence logPersistence;
   ElectionPersistence electionPersistence;
   RaftClient &raftClient;
+  RaftLevelDB db;
   std::atomic<bool> heartbeatRecv;
 
 private:

@@ -130,7 +130,9 @@ RaftServer::ClientRequest(::grpc::ServerContext *,
     } else if (args->type() == "get") {
       ret->set_success(raftControl.logPersistence.isReadable(
           raftControl.electionPersistence.getTerm()));
-      // TODO: Read Value from Mem Cache D if readable
+      if(ret->success()) {
+        ret->set_val(raftControl.db.get(args->key()));
+      }
     }
   } else {
     ret->set_success(false);
