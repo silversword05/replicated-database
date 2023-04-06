@@ -12,7 +12,7 @@ constexpr auto server_address = "localhost:50051";
 
 inline std::filesystem::path home_dir(getenv("HOME"));
 
-constexpr uint intWidth = 4;
+constexpr uint intWidth = 8;
 constexpr uint memberVariableLog = 5;
 constexpr uint machineCount = 3;
 constexpr uint termStart = 1;
