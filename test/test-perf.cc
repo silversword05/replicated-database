@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
   std::unordered_set<uint> reqNumSet;
 
-  auto start = utils::getCurrTime();
+  auto start = utils::getCurrTimeinMs();
   // Do some put operations
   for (uint i = 0; i < reqs; i++) {
     auto val = service.put(i, i + 100);
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
       reqNumSet.insert(val.value());
     }
   }
-  auto timeInSec = utils::getCurrTime() - start;
+  auto timeInSec = (utils::getCurrTimeinMs() - start) / 1000;
   auto orgThrput = reqs / timeInSec;
 
   utils::print(reqs, "put requests done with original Throughput of",

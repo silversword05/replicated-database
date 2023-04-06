@@ -5,7 +5,9 @@
 #include <chrono>
 
 #define assertm(exp, msg) assert(((void)msg, exp))
-#define PRINT(...) utils::print("[INFO] :", std::this_thread::get_id(), ": " ,__PRETTY_FUNCTION__, " ", __VA_ARGS__)
+#define PRINT(...)                                                             \
+  utils::print("[INFO] :", std::this_thread::get_id(), ": ",                   \
+               __PRETTY_FUNCTION__, " ", __VA_ARGS__)
 
 namespace utils {
 constexpr auto server_address = "localhost:50051";
@@ -47,20 +49,24 @@ inline std::string getAddress(uint machineId) {
   return getHostName(machineId) + ":5005" + std::to_string(machineId);
 }
 
-inline long int getCurrTime() {
-  return static_cast<long int> (std::time(nullptr));
+inline long long int getCurrTimeinMs() {
+  return duration_cast<std::chrono::milliseconds>(
+             std::chrono::system_clock::now().time_since_epoch())
+      .count();
 }
 
 inline void print() { std::cout << std::endl; }
-template <typename T> inline void print(const T &t) { std::cout << t << std::endl; }
+template <typename T> inline void print(const T &t) {
+  std::cout << t << std::endl;
+}
 template <typename First, typename... Rest>
 inline void print(const First &first, const Rest &...rest) {
-  if constexpr(std::is_same_v<First, bool>) {
+  if constexpr (std::is_same_v<First, bool>) {
     std::cout << std::boolalpha << first << " ";
   } else {
     std::cout << first << " ";
   }
-  
+
   print(rest...); // recursive call using pack expansion syntax
 }
 } // namespace utils

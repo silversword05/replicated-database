@@ -14,7 +14,7 @@ enum TokenState { WAITING, SUCCESS, FAIL };
 class ClientServer final : public ::replicateddatabase::ClientBook::Service {
 public:
   std::unordered_map<uint, TokenState> tokenSet;
-  std::unordered_map<uint, std::pair<long int, long int>> latencyMap;
+  std::unordered_map<uint, std::pair<long long int, long long int>> latencyMap;
   std::recursive_mutex updateLock;
 
   ClientServer() = default;
