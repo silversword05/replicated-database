@@ -163,16 +163,8 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
   }
 }
 
-void RaftControl::initialStateSync() {
-  int lastCommitIndex = logPersistence.readLastCommitIndex();
-  syncStart = 0;
-  for (; syncStart <= lastCommitIndex; syncStart++) {
-    applyLog(false);
-  }
-}
-
-void RaftControl::applyLog(bool sendAck) {
-  auto logEntry = logPersistence.readLog(syncStart);
+void RaftControl::applyLog(bool sendAck, int index) {
+  auto logEntry = logPersistence.readLog(index);
   assertm(logEntry.has_value(), "ye logs honi chaiye");
   if (logEntry.value().isDummy())
     return;
@@ -185,9 +177,14 @@ void RaftControl::applyLog(bool sendAck) {
 
 void RaftControl::stateSyncFunc() {
   while (true) {
-    while (syncStart <= logPersistence.readLastCommitIndex()) {
-      applyLog(true);
-      syncStart++;
+    while (logPersistence.readLastCommitIndex() == -1)
+      std::this_thread::yield();
+
+    int lastSyncIndex = logPersistence.readLastSyncIndex();
+    while (lastSyncIndex + 1 <= logPersistence.readLastCommitIndex()) {
+      utils::print("Applying log index", lastSyncIndex + 1);
+      applyLog(true, lastSyncIndex + 1);
+      logPersistence.incrementLastSyncIndex(lastSyncIndex);
     }
     std::this_thread::yield();
   }
@@ -200,7 +197,6 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 
-  initialStateSync();
   std::jthread stateSyncThread([this]() { this->stateSyncFunc(); });
   stateSyncThread.detach();
 

@@ -20,7 +20,7 @@ constexpr uint baseSleepTime = 5000;
 constexpr uint maxSleepTime = 10000;
 constexpr uint followerSleep = 3000;
 constexpr bool forceLocalHost = true;
-constexpr bool cleanStart = true;
+constexpr bool cleanStart = false;
 
 enum State { FOLLOWER, CANDIDATE, LEADER };
 

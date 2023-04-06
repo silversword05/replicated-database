@@ -32,13 +32,11 @@ public:
 
 private:
   void clearQueue();
-  void initialStateSync();
-  void applyLog(bool);
+  void applyLog(bool, int);
 
   moodycamel::ConcurrentQueue<LogEntry> clientQueue;
   utils::State state;
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;
   uint selfId;
-  int syncStart;
 };

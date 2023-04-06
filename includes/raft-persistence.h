@@ -63,9 +63,11 @@ public:
   checkAndWriteLog(uint, const LogEntry &, int, uint);
   bool checkEmptyHeartbeat(uint, int, uint);
   int readLastCommitIndex();
+  int readLastSyncIndex();
   void markLogSyncBit(uint, uint, bool); // index, machineId;
   void reset();
   void markSelfSyncBit();
+  void incrementLastSyncIndex(int&);
   std::pair<int, int> getLastLogData();
   bool isReadable(uint);
   ~LogPersistence() = default;
@@ -77,12 +79,15 @@ private:
 
   std::fstream logFs;
   std::fstream lastCommitIndexFs;
+  std::fstream levelDbFs;
   std::recursive_mutex logLock;
   std::recursive_mutex syncLock; // should be taken before last commit lock
   std::shared_mutex lastCommitIndexLock;
+  std::recursive_mutex levelDbSyncLock;
   std::unordered_map<uint, std::bitset<utils::machineCount>>
       logSync;                  // index, majorityBits
   int lastCommitIndexCache{-1}; // just cache
+  int levelDbSyncCache{-1};
   uint selfId;
 };
 

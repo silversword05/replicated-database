@@ -5,8 +5,6 @@ RaftLevelDB::RaftLevelDB(std::filesystem::path homeDir) {
   options.create_if_missing = true;
 
   auto dbFile = homeDir / "db-file";
-  if (std::filesystem::exists(dbFile))
-    std::filesystem::remove(dbFile);
 
   leveldb::Status status = leveldb::DB::Open(options, dbFile, &db);
   assertm(status.ok(), ("Level DB start nahi hua" + status.ToString()));

@@ -10,7 +10,11 @@ LogPersistence::LogPersistence(const std::filesystem::path &homeDir,
   lastCommitIndexFs =
       std::fstream(homeDir / "commit-index.txt",
                    std::ios::in | std::ios::out | std::ios::ate);
+  levelDbFs = std::fstream(homeDir / "leveldb-sync.txt", std::ios::app);
+  levelDbFs = std::fstream(homeDir / "leveldb-sync.txt",
+                           std::ios::in | std::ios::out | std::ios::ate);
   readLastCommitIndex();
+  readLastSyncIndex();
 }
 
 void LogPersistence::reset() {
@@ -151,6 +155,18 @@ int LogPersistence::readLastCommitIndex() {
   }
 }
 
+int LogPersistence::readLastSyncIndex() {
+  std::lock_guard _(levelDbSyncLock);
+  if (levelDbSyncCache != -1)
+    return levelDbSyncCache;
+  levelDbFs.clear();
+  levelDbFs.seekg(0, std::ios::beg);
+  if (levelDbFs >> levelDbSyncCache)
+    return levelDbSyncCache;
+  levelDbSyncCache = -1;
+  return levelDbSyncCache;
+}
+
 void LogPersistence::markLogSyncBit(uint logIndex, uint machineId,
                                     bool updateLastCommit) {
   assertm(machineId < utils::machineCount, "Ye kon sa naya machine uga diya");
@@ -176,11 +192,25 @@ void LogPersistence::updateLastCommitIndex(int lastCommitIndex) {
   lastCommitIndexFs.flush();
 }
 
+void LogPersistence::incrementLastSyncIndex(int& levelDbSyncIndex) {
+  std::lock_guard _(levelDbSyncLock);
+  assertm(levelDbSyncIndex == levelDbSyncCache, "Bhai bich ka kyu miss kar dia");
+  levelDbSyncIndex++;
+  levelDbFs.clear();
+  levelDbFs.seekg(0, std::ios::beg);
+  levelDbFs << levelDbSyncIndex;
+  levelDbSyncCache = levelDbSyncIndex;
+
+  levelDbFs.flush();
+}
+
 bool LogPersistence::isReadable(uint expectedTerm) {
-  if(expectedTerm == utils::termStart) return false;
+  if (expectedTerm == utils::termStart)
+    return false;
   std::lock_guard _(logLock);
   int lastLogIndex = getLastLogIndex();
-  if(lastLogIndex == -1) return true;
+  if (lastLogIndex == -1)
+    return true;
   auto lastEntry = readLog(lastLogIndex);
   assertm(lastEntry.has_value(), "This should exists");
   return (lastEntry.value().term == expectedTerm);
