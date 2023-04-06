@@ -39,4 +39,5 @@ private:
   std::vector<std::jthread> jthreadVector;
   std::recursive_mutex stateChangeLock;
   uint selfId;
+  MachineCountPersistence &machineCountPersistence;
 };

@@ -2,7 +2,7 @@
 
 LogPersistence::LogPersistence(const std::filesystem::path &homeDir,
                                uint selfId_)
-    : selfId(selfId_) {
+    : selfId(selfId_), machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
   logFs = std::fstream(homeDir / "log.txt", std::ios::app);
   logFs = std::fstream(homeDir / "log.txt",
                        std::ios::in | std::ios::out | std::ios::ate);
@@ -169,12 +169,13 @@ int LogPersistence::readLastSyncIndex() {
 
 void LogPersistence::markLogSyncBit(uint logIndex, uint machineId,
                                     bool updateLastCommit) {
-  assertm(machineId < utils::machineCount, "Ye kon sa naya machine uga diya");
+  assertm(machineId < machineCountPersistence.getMachineCount(), "Ye kon sa naya machine uga diya");
   std::lock_guard _(syncLock);
   auto &majorityVote = logSync[logIndex];
   assertm(!majorityVote.test(machineId), "Boss kyu bhej rahe ho dubara");
   majorityVote.set(machineId);
-  if (majorityVote.count() == (utils::machineCount / 2 + 1) && updateLastCommit)
+  if (majorityVote.count() == (machineCountPersistence.getMachineCount() / 2 + 1) &&
+      updateLastCommit)
     updateLastCommitIndex(logIndex);
 }
 
@@ -192,9 +193,10 @@ void LogPersistence::updateLastCommitIndex(int lastCommitIndex) {
   lastCommitIndexFs.flush();
 }
 
-void LogPersistence::incrementLastSyncIndex(int& levelDbSyncIndex) {
+void LogPersistence::incrementLastSyncIndex(int &levelDbSyncIndex) {
   std::lock_guard _(levelDbSyncLock);
-  assertm(levelDbSyncIndex == levelDbSyncCache, "Bhai bich ka kyu miss kar dia");
+  assertm(levelDbSyncIndex == levelDbSyncCache,
+          "Bhai bich ka kyu miss kar dia");
   levelDbSyncIndex++;
   levelDbFs.clear();
   levelDbFs.seekg(0, std::ios::beg);
@@ -218,7 +220,7 @@ bool LogPersistence::isReadable(uint expectedTerm) {
 
 ElectionPersistence::ElectionPersistence(const std::filesystem::path &homeDir,
                                          uint selfId_)
-    : selfId(selfId_) {
+    : selfId(selfId_), machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
   termFsPath = homeDir / "term.txt";
   std::fstream(termFsPath, std::ios::app);
   votedForFsPath = homeDir / "voted-for.txt";
@@ -263,7 +265,8 @@ std::optional<uint> ElectionPersistence::getVotedFor() {
 }
 
 uint ElectionPersistence::writeVotedFor(uint machineId) {
-  assertm(machineId < utils::machineCount, "Ye kon sa naya machine uga diya");
+  assertm(machineId < machineCountPersistence.getMachineCount(),
+          "Ye kon sa naya machine uga diya");
   std::lock_guard _(votedForLock);
   std::fstream fs(votedForFsPath, std::ios::in | std::ios::out | std::ios::ate);
   assertm(bool(fs), "Bhai file khula nahi, voted for wala");
@@ -317,6 +320,62 @@ bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
   if (termCache == oldTerm) {
     fs.close();
     writeTermAndVote(oldTerm + 1, selfId);
+    return true;
+  }
+  return false;
+}
+
+std::pair<bool, bool> ElectionPersistence::incrementMachineCountTermAndSelfVote(
+    uint logMachineCount, uint logTerm) {
+
+  if (incrementTermAndSelfVote(logTerm))
+    return {true, machineCountPersistence.incrementMachineCount(logMachineCount)};
+  return {false, false};
+}
+
+MachineCountPersistence::MachineCountPersistence(
+    const std::filesystem::path &homeDir) {
+  machineCountFsPath = homeDir / "machine-count.txt";
+  std::fstream(machineCountFsPath, std::ios::app);
+  getMachineCount();
+}
+
+uint MachineCountPersistence::getMachineCount() {
+  {
+    std::shared_lock _(machineCountLock);
+    if (machineCountCache != 0)
+      return machineCountCache;
+  }
+  {
+    std::unique_lock _(machineCountLock);
+    {
+      std::ifstream ifs(machineCountFsPath);
+      assertm(bool(ifs), "Bhai file khula nahi, term wala");
+      if (ifs >> machineCountCache)
+        return machineCountCache;
+      // assertm(bool(ifs), "Bhai read fail ho gaya!!");
+    }
+    {
+      std::ofstream ofs(machineCountFsPath);
+      machineCountCache = utils::initialMachineCount;
+      ofs << machineCountCache;
+      ofs.flush();
+      return machineCountCache;
+    }
+  }
+}
+
+bool MachineCountPersistence::incrementMachineCount(uint logMachineCount) {
+  std::unique_lock _{machineCountLock};
+
+  std::fstream fs(machineCountFsPath, std::ios::in | std::ios::out);
+  assertm(fs >> machineCountCache, "File should be readable");
+  if (machineCountCache == logMachineCount) {
+    fs.clear();
+    fs.seekg(0, std::ios::beg);
+    fs << (logMachineCount + 1);
+    fs.flush();
+    machineCountCache = logMachineCount + 1;
     return true;
   }
   return false;

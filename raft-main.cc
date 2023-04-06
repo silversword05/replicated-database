@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
     std::filesystem::remove_all(homeDir);
   std::filesystem::create_directories(homeDir);
 
-  RaftClient raftClient;
+  RaftClient raftClient{homeDir};
   RaftControl raftControl(homeDir, selfId, raftClient);
 
   grpc::ServerBuilder builder;

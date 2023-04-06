@@ -4,9 +4,9 @@ int main(int argc, char *argv[]) {
   if (argc != 2)
     exit(1);
   uint clientId = std::stoi(argv[1]);
-  if (clientId < utils::machineCount) {
+  if (clientId < utils::initialMachineCount) {
     utils::print("Client Id (", clientId,
-                 ") cannot be less than machine count (", utils::machineCount,
+                 ") cannot be less than machine count (", utils::initialMachineCount,
                  ").");
     exit(1);
   }

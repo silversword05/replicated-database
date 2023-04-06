@@ -18,7 +18,7 @@ public:
   ClientServer() = default;
   virtual ::grpc::Status ClientAck(::grpc::ServerContext *,
                                    const ::replicateddatabase::ArgsAck *,
-                                   ::replicateddatabase::RetAck *);
+                                   ::replicateddatabase::Empty *);
 };
 
 class ClientService {

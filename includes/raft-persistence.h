@@ -46,8 +46,42 @@ struct LogEntry {
 
   bool isDummy() {
     uint infinity = std::pow(10, utils::intWidth) - 1;
-    return (key == infinity && val == infinity);
+    return (key == infinity && val == infinity && clientId == 0 && reqNo == 0);
   }
+
+  void fillMemberChangeEntry(uint newMachineId, uint oldMachineCount) {
+    term = 0;
+    clientId = newMachineId;
+    reqNo = oldMachineCount;
+    key = std::pow(10, utils::intWidth) - 1;
+    val = std::pow(10, utils::intWidth) - 1;
+  }
+
+  bool isMemberChange() {
+    uint infinity = std::pow(10, utils::intWidth) - 1;
+    return (key == infinity && val == infinity && clientId != 0 && reqNo != 0);
+  }
+};
+
+class MachineCountPersistence {
+public:
+  static MachineCountPersistence &
+  getInstance(const std::filesystem::path &path) {
+    static MachineCountPersistence instance{path};
+    return instance;
+  }
+  uint getMachineCount();
+  bool incrementMachineCount(uint);
+
+private:
+  MachineCountPersistence(const std::filesystem::path &);
+  MachineCountPersistence(const MachineCountPersistence &) = delete;
+  MachineCountPersistence &operator=(const MachineCountPersistence &) = delete;
+  ~MachineCountPersistence() = default;
+
+  uint machineCountCache{0};
+  std::shared_mutex machineCountLock;
+  std::filesystem::path machineCountFsPath;
 };
 
 class LogPersistence {
@@ -67,7 +101,7 @@ public:
   void markLogSyncBit(uint, uint, bool); // index, machineId;
   void reset();
   void markSelfSyncBit();
-  void incrementLastSyncIndex(int&);
+  void incrementLastSyncIndex(int &);
   std::pair<int, int> getLastLogData();
   bool isReadable(uint);
   ~LogPersistence() = default;
@@ -84,11 +118,12 @@ private:
   std::recursive_mutex syncLock; // should be taken before last commit lock
   std::shared_mutex lastCommitIndexLock;
   std::recursive_mutex levelDbSyncLock;
-  std::unordered_map<uint, std::bitset<utils::machineCount>>
+  std::unordered_map<uint, std::bitset<utils::maxMachineCount>>
       logSync;                  // index, majorityBits
   int lastCommitIndexCache{-1}; // just cache
   int levelDbSyncCache{-1};
   uint selfId;
+  MachineCountPersistence &machineCountPersistence;
 };
 
 class ElectionPersistence {
@@ -98,6 +133,7 @@ public:
   uint getTerm();
   bool setTermAndSetVote(uint, uint machineId);
   bool incrementTermAndSelfVote(uint);
+  std::pair<bool, bool> incrementMachineCountTermAndSelfVote(uint, uint);
   std::optional<uint> getVotedFor();
   uint writeVotedFor(uint);
   ~ElectionPersistence() = default;
@@ -111,4 +147,5 @@ private:
   std::recursive_mutex votedForLock;
   uint termCache{0}; // just cache
   uint selfId;
+  MachineCountPersistence &machineCountPersistence;
 };

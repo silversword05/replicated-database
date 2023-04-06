@@ -2,8 +2,9 @@
 #include <raft-persistence.h>
 #include <raft-server.h>
 
-RaftClient::RaftClient() {
-  for (uint i = 0; i < utils::machineCount; i++) {
+RaftClient::RaftClient(const std::filesystem::path &homeDir)
+    : machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
+  for (uint i = 0; i < machineCountPersistence.getMachineCount(); i++) {
     stubVector.push_back(
         replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
             utils::getAddress(i), grpc::InsecureChannelCredentials())));
@@ -130,7 +131,7 @@ RaftServer::ClientRequest(::grpc::ServerContext *,
     } else if (args->type() == "get") {
       ret->set_success(raftControl.logPersistence.isReadable(
           raftControl.electionPersistence.getTerm()));
-      if(ret->success()) {
+      if (ret->success()) {
         ret->set_val(raftControl.db.get(args->key()));
       }
     }
@@ -150,10 +151,11 @@ auto &RaftClient::getClientStub(uint clientId) {
 }
 
 void RaftClient::sendClientAck(uint clientId, uint reqNo, bool processed) {
-  assertm(clientId >= utils::machineCount, "sever he bro");
+  assertm(clientId >= machineCountPersistence.getMachineCount(),
+          "sever he bro");
   grpc::ClientContext context;
   replicateddatabase::ArgsAck query;
-  replicateddatabase::RetAck response;
+  replicateddatabase::Empty response;
 
   query.set_processed(processed);
   query.set_reqno(reqNo);
@@ -163,7 +165,7 @@ void RaftClient::sendClientAck(uint clientId, uint reqNo, bool processed) {
 std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint selfId,
                                                    int lastLogIndex,
                                                    int lastLogTerm, uint toId) {
-  assertm(selfId < utils::machineCount, "nayi machine");
+  assertm(selfId < machineCountPersistence.getMachineCount(), "nayi machine");
   grpc::ClientContext context;
   replicateddatabase::ArgsVote query;
   replicateddatabase::RetVote response;
@@ -183,7 +185,7 @@ std::optional<bool>
 RaftClient::sendAppendEntryRpc(uint term, uint selfId, uint logIndex,
                                int prevLogTerm, std::string logString,
                                int leaderCommitIndex, uint toId) {
-  assertm(selfId < utils::machineCount, "nayi machine");
+  assertm(selfId < machineCountPersistence.getMachineCount(), "nayi machine");
   grpc::ClientContext context;
   replicateddatabase::ArgsAppend query;
   replicateddatabase::RetAppend response;

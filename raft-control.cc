@@ -64,7 +64,7 @@ bool RaftControl::candidateToLeader(uint localTerm) {
                " to LEADER for the term: ", localTerm);
   addJthread(
       std::jthread([this](std::stop_token s) { this->consumerFunc(s); }));
-  for (uint i = 0; i < utils::machineCount; i++) {
+  for (uint i = 0; i < machineCountPersistence.getMachineCount(); i++) {
     if (i == selfId)
       continue;
     addJthread(std::jthread([this, i, localTerm](std::stop_token s) {
@@ -166,7 +166,7 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
 void RaftControl::applyLog(bool sendAck, int index) {
   auto logEntry = logPersistence.readLog(index);
   assertm(logEntry.has_value(), "ye logs honi chaiye");
-  if (logEntry.value().isDummy())
+  if (logEntry.value().isDummy() || logEntry.value().isMemberChange())
     return;
   db.put(logEntry.value().key, logEntry.value().val);
   utils::print("Applying log", logEntry.value().getString());
@@ -193,7 +193,8 @@ void RaftControl::stateSyncFunc() {
 RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
                          RaftClient &raftClient_)
     : logPersistence(homeDir, selfId), electionPersistence(homeDir, selfId),
-      raftClient(raftClient_), db(homeDir), selfId(selfId) {
+      raftClient(raftClient_), db(homeDir), selfId(selfId),
+      machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
   std::lock_guard _(stateChangeLock);
   state = utils::FOLLOWER;
 
@@ -212,7 +213,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
 
     auto requestVotes = [&] {
       uint majorityCount = 1;
-      for (uint i = 0; i < utils::machineCount; i++) {
+      for (uint i = 0; i < machineCountPersistence.getMachineCount(); i++) {
         if (i == selfId)
           continue;
         auto [lastLogIndex, lastLogTerm] =
@@ -225,7 +226,7 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
           return false;
         majorityCount++;
       }
-      return (majorityCount > (utils::machineCount) / 2);
+      return (majorityCount > (machineCountPersistence.getMachineCount() / 2));
     };
 
     auto performElecTimeoutCheck = [&] {

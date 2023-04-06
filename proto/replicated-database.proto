@@ -33,10 +33,6 @@ message ArgsAck {
     bool processed = 2;
 }
 
-message RetAck {
-    bool idontcare = 1;
-}
-
 message ArgsRequest {
     uint32 clientId = 1;
     uint32 reqNo = 2;
@@ -50,12 +46,31 @@ message RetRequest {
     bool success = 2;
 }
 
+message ArgsMemberAdd {
+    uint32 machineNo = 1;
+}
+
+message RetMemberAdd {
+    bool success = 1;
+}
+
+message ArgsMemberAddAck {
+    bool success = 1;
+}
+
+message Empty {}
+
 service RaftBook {
     rpc RequestVote(ArgsVote) returns (RetVote) {}
     rpc AppendEntries(ArgsAppend) returns (RetAppend) {}
     rpc ClientRequest(ArgsRequest) returns (RetRequest) {}
+    rpc AddMember(ArgsMemberAdd) returns (RetMemberAdd) {}
+}
+
+service MemberBook {
+    rpc AddAck(ArgsMemberAddAck) returns (Empty) {}
 }
 
 service ClientBook {
-    rpc ClientAck(ArgsAck) returns (RetAck) {}
+    rpc ClientAck(ArgsAck) returns (Empty) {}
 }

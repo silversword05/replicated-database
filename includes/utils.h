@@ -14,13 +14,14 @@ inline std::filesystem::path home_dir(getenv("HOME"));
 
 constexpr uint intWidth = 8;
 constexpr uint memberVariableLog = 5;
-constexpr uint machineCount = 3;
+constexpr uint initialMachineCount = 3;
+constexpr uint maxMachineCount = 10;
 constexpr uint termStart = 1;
 constexpr uint baseSleepTime = 5000;
 constexpr uint maxSleepTime = 10000;
 constexpr uint followerSleep = 3000;
 constexpr bool forceLocalHost = true;
-constexpr bool cleanStart = true;
+constexpr bool cleanStart = false;
 
 enum State { FOLLOWER, CANDIDATE, LEADER };
 

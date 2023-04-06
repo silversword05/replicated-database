@@ -6,14 +6,15 @@
 #include <replicated-database.grpc.pb.h>
 #include <replicated-database.pb.h>
 
-#include <utils.h>
+#include <raft-persistence.h>
 
 class RaftClient {
   std::vector<std::unique_ptr<replicateddatabase::RaftBook::Stub>> stubVector;
   std::unordered_map<int, std::unique_ptr<replicateddatabase::ClientBook::Stub>> stubMap;
+  MachineCountPersistence &machineCountPersistence;
 
 public:
-  RaftClient();
+  RaftClient(const std::filesystem::path &);
   RaftClient(RaftClient const &) = delete;
   void operator=(RaftClient const &) = delete;
 
