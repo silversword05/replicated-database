@@ -18,8 +18,8 @@ void RaftLevelDB::put(uint key, uint val) {
   std::string valString = std::to_string(val);
   leveldb::WriteOptions writeOptions;
   auto status = db->Put(writeOptions, keyString, valString);
-  utils::print("Putting", " ", key, ",", val);
-  assertm(status.ok(), "Rocks DB use kar bsdk!!");
+  // utils::print("Putting", " ", key, ",", val);
+  assertm(status.ok(), "LevelDB not working!!");
 }
 
 uint RaftLevelDB::get(uint key) {
@@ -29,7 +29,7 @@ uint RaftLevelDB::get(uint key) {
   std::string keyString = std::to_string(key);
   std::string valString;
   auto status = db->Get(leveldb::ReadOptions(), keyString, &valString);
-  utils::print("Getting", " ", keyString, ",", valString);
+  // utils::print("Getting", " ", keyString, ",", valString);
   if (!status.ok())
     return infinity;
 

@@ -4,13 +4,21 @@
 ClientServer::ClientAck(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsAck *args,
                         ::replicateddatabase::RetAck *ret) {
+  std::lock_guard _(updateLock);
   assertm(tokenSet.contains(args->reqno()),
           "Request number not in the token set");
+  assertm(latencyMap.contains(args->reqno()),
+          "Request number not in the latency Map");
   if (tokenSet[args->reqno()] == TokenState::WAITING) {
+    auto [startTime, endTime] = latencyMap[args->reqno()];
+    assertm(endTime == -1, "endTime getting updated twice");
     if (args->processed()) {
       tokenSet[args->reqno()] = TokenState::SUCCESS;
+      latencyMap[args->reqno()].second = utils::getCurrTime();
     } else {
       tokenSet[args->reqno()] = TokenState::FAIL;
+      latencyMap[args->reqno()].second =
+          -2; // special value to denote failure case
     }
   } else {
     if (args->processed()) {
@@ -59,7 +67,6 @@ ClientService::~ClientService() { serverPtr->Shutdown(); }
 std::optional<uint>
 ClientService::sendClientRequestRPC(uint clientId, uint reqNo, uint key,
                                     uint val, std::string type, uint toId) {
-  utils::print("Send Request from the client to server ", toId);
   assertm(toId < utils::machineCount, "Client Getting Wrong Machine ID");
   grpc::ClientContext context;
   replicateddatabase::ArgsRequest query;
@@ -100,11 +107,16 @@ bool ClientService::putBlocking(uint key, uint val) {
 
 std::optional<uint> ClientService::put(uint key, uint val) {
   reqNo++;
+  // Setting these before as this as RTT time being checked
+  std::lock_guard _(server.updateLock);
+  server.tokenSet[reqNo] = TokenState::WAITING;
+  std::pair<long int, long int> timePair(utils::getCurrTime(), -1);
+  server.latencyMap[reqNo] = timePair;
+
   if (lastLeaderChannel != -1) { // In case we have a last put channel
     auto ret = sendClientRequestRPC(clientId, reqNo, key, val, "put",
                                     lastLeaderChannel);
     if (ret.has_value()) {
-      server.tokenSet[reqNo] = TokenState::WAITING;
       return reqNo;
     }
   }
@@ -114,10 +126,13 @@ std::optional<uint> ClientService::put(uint key, uint val) {
     auto ret = sendClientRequestRPC(clientId, reqNo, key, val, "put", i);
     if (ret.has_value()) {
       lastLeaderChannel = i; // Next time we will save time
-      server.tokenSet[reqNo] = TokenState::WAITING;
       return reqNo;
     }
   }
+
+  // Sending failure so remove the entered data
+  server.tokenSet.erase(reqNo);
+  server.latencyMap.erase(reqNo);
 
   return {};
 }
@@ -147,4 +162,17 @@ std::optional<uint> ClientService::get(uint key) {
     }
   }
   return {};
+}
+
+void ClientService::outputLatencyMap(std::fstream &outputFs) {
+  outputFs << "reqNo,startTime,endTime\n";
+  for (auto itr = server.latencyMap.begin(); itr != server.latencyMap.end();
+       itr++) {
+    auto keyReqNo = itr->first;
+    auto [startTime, endTime] = itr->second;
+
+    // utils::print("For reqNo: ", key, " got startTime: ", startTime,
+    //              " & endTime: ", endTime);
+    outputFs << keyReqNo << "," << startTime << "," << endTime << "\n";
+  }
 }

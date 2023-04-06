@@ -47,6 +47,10 @@ inline std::string getAddress(uint machineId) {
   return getHostName(machineId) + ":5005" + std::to_string(machineId);
 }
 
+inline long int getCurrTime() {
+  return static_cast<long int> (std::time(nullptr));
+}
+
 inline void print() { std::cout << std::endl; }
 template <typename T> inline void print(const T &t) { std::cout << t << std::endl; }
 template <typename First, typename... Rest>

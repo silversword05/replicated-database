@@ -19,17 +19,17 @@ RaftServer::RequestVote(::grpc::ServerContext *,
   std::lock_guard _(rpcLock);
   raftControl.heartbeatRecv.store(true);
 
-  utils::print("RequestVote: Leader Info");
-  utils::print("term: ", args->term(), ";candidateId: ", args->candidateid(),
-               ";lastLogIndex: ", args->lastlogindex(),
-               ";lastLogTerm: ", args->lastlogterm());
+  // utils::print("RequestVote: Leader Info");
+  // utils::print("term: ", args->term(), ";candidateId: ", args->candidateid(),
+  //              ";lastLogIndex: ", args->lastlogindex(),
+  //              ";lastLogTerm: ", args->lastlogterm());
 
   auto [lastLogIndex, lastLogTerm] =
       raftControl.logPersistence.getLastLogData();
 
-  utils::print("RequestVote: Follower Info");
-  utils::print("term: ", raftControl.electionPersistence.getTerm(),
-               ";lastLogIndex: ", lastLogIndex, ";lastLogTerm: ", lastLogTerm);
+  // utils::print("RequestVote: Follower Info");
+  // utils::print("term: ", raftControl.electionPersistence.getTerm(),
+  //              ";lastLogIndex: ", lastLogIndex, ";lastLogTerm: ", lastLogTerm);
   if (lastLogTerm > args->lastlogterm()) {
     // vote not granted
     ret->set_votegranted(false);
@@ -65,18 +65,18 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
   std::lock_guard _(rpcLock);
   raftControl.heartbeatRecv.store(true);
 
-  utils::print("AppendEntries: Leader Info");
-  utils::print("term: ", args->term(), ";leaderId: ", args->leaderid(),
-               ";logIndex: ", args->logindex(),
-               ";prevLogTerm: ", args->prevlogterm(),
-               ";leaderCommitIndex: ", args->leadercommitindex(),
-               ";entry: ", args->entry());
+  // utils::print("AppendEntries: Leader Info");
+  // utils::print("term: ", args->term(), ";leaderId: ", args->leaderid(),
+  //              ";logIndex: ", args->logindex(),
+  //              ";prevLogTerm: ", args->prevlogterm(),
+  //              ";leaderCommitIndex: ", args->leadercommitindex(),
+  //              ";entry: ", args->entry());
 
-  utils::print("AppendEntries: Follower Info");
-  utils::print("term: ", raftControl.electionPersistence.getTerm(),
-               ";LastLogIndex: ", raftControl.logPersistence.getLastLogIndex(),
-               ";followerCommitIndex: ",
-               raftControl.logPersistence.readLastCommitIndex());
+  // utils::print("AppendEntries: Follower Info");
+  // utils::print("term: ", raftControl.electionPersistence.getTerm(),
+  //              ";LastLogIndex: ", raftControl.logPersistence.getLastLogIndex(),
+  //              ";followerCommitIndex: ",
+  //              raftControl.logPersistence.readLastCommitIndex());
 
   if (args->term() < raftControl.electionPersistence.getTerm()) {
     ret->set_term(raftControl.electionPersistence.getTerm());

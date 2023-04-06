@@ -14,6 +14,8 @@ enum TokenState { WAITING, SUCCESS, FAIL };
 class ClientServer final : public ::replicateddatabase::ClientBook::Service {
 public:
   std::unordered_map<uint, TokenState> tokenSet;
+  std::unordered_map<uint, std::pair<long int, long int>> latencyMap;
+  std::recursive_mutex updateLock;
 
   ClientServer() = default;
   virtual ::grpc::Status ClientAck(::grpc::ServerContext *,
@@ -40,6 +42,7 @@ public:
   std::optional<uint> put(uint, uint);
   std::optional<bool> checkPutDone(uint);
   std::optional<uint> get(uint);
+  void outputLatencyMap(std::fstream &);
 
 private:
   std::unique_ptr<::grpc::Server> serverPtr;

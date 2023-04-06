@@ -145,6 +145,8 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
       } else if (syncSuccess.has_value() && !syncSuccess.value()) {
         lastSyncIndex--;
       }
+      std::this_thread::sleep_for(
+          std::chrono::microseconds{100});
     } else {
       // blank heartbeat
       int prevLogTerm = -1;
@@ -169,7 +171,7 @@ void RaftControl::applyLog(bool sendAck, int index) {
   if (logEntry.value().isDummy())
     return;
   db.put(logEntry.value().key, logEntry.value().val);
-  utils::print("Applying log", logEntry.value().getString());
+  // utils::print("Applying log", logEntry.value().getString());
   if (sendAck)
     raftClient.sendClientAck(logEntry.value().clientId, logEntry.value().reqNo,
                              true);
@@ -182,7 +184,7 @@ void RaftControl::stateSyncFunc() {
 
     int lastSyncIndex = logPersistence.readLastSyncIndex();
     while (lastSyncIndex + 1 <= logPersistence.readLastCommitIndex()) {
-      utils::print("Applying log index", lastSyncIndex + 1);
+      // utils::print("Applying log index", lastSyncIndex + 1);
       applyLog(true, lastSyncIndex + 1);
       logPersistence.incrementLastSyncIndex(lastSyncIndex);
     }
