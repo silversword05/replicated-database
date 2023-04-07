@@ -220,11 +220,8 @@ void RaftControl::ackNewMember(uint index) {
              !compareState(utils::LEADER)) {
     if (machineCountPersistence.getMachineCount() > logEntry.value().reqNo)
       return;
-    uint currTerm = electionPersistence.getTerm();
-    auto [successTerm, successMachineCount] =
-        electionPersistence.incrementMachineCountTermAndSelfVote(
-            logEntry.value().reqNo, currTerm);
-    assertm(successTerm, "State change lock ke baad kaise diff ho raha he");
+    auto successMachineCount =
+        machineCountPersistence.incrementMachineCount(logEntry.value().reqNo);
     raftClient.sendAddMemberAck(logEntry.value().clientId, successMachineCount);
   }
 }
