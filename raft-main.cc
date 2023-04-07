@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
     utils::print("Join result", success);
     utils::print("New machine count", selfId + 1);
     if(success) {
+      utils::print2("Successfully joined as machine:", selfId, "starting RAFT!!");
       MachineCountPersistence::getInstance(homeDir).setMachineCount(selfId + 1);
       startRaft(homeDir, selfId);
     } else {

@@ -397,6 +397,8 @@ bool MachineCountPersistence::incrementMachineCount(uint logMachineCount) {
     fs << (logMachineCount + 1);
     fs.flush();
     machineCountCache = logMachineCount + 1;
+
+    utils::print2("Increment machine count from", logMachineCount,"to machine count:", machineCountCache);
     return true;
   }
   return false;

@@ -154,6 +154,7 @@ RaftServer::AddMember(::grpc::ServerContext *,
                       const ::replicateddatabase::ArgsMemberAdd *args,
                       ::replicateddatabase::RetMemberAdd *ret) {
   utils::print("Received Member change entry", args->machineno());
+  utils::print2("Received member increment request!!");
   if (raftControl.compareState(utils::LEADER)) {
     ret->set_success(raftControl.appendMemberAddEntry(args->machineno()));
   } else {
