@@ -39,16 +39,17 @@ int main(int argc, char *argv[]) {
                "!!");
 
   // check if put done
-  for (auto elem : reqNumSet) {
-    while (true) {
-      auto check = service.checkPutDone(elem);
-      if (check.has_value()) {
-        // utils::print("Request No: ", elem, " has result: ",
-        //   check.value());
-        break;
-      }
-    }
-  }
+  // for (auto elem : reqNumSet) {
+  //   while (true) {
+  //     auto check = service.checkPutDone(elem);
+  //     if (check.has_value()) {
+  //       // utils::print("Request No: ", elem, " has result: ",
+  //       //   check.value());
+  //       break;
+  //     }
+  //   }
+  // }
+  sleep(100);
 
   std::fstream outputFs;
   std::string fileName = "clientLatency_" + std::to_string(orgThrput) + ".csv";
