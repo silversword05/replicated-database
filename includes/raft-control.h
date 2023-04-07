@@ -34,6 +34,7 @@ public:
 private:
   void clearQueue();
   void applyLog(bool, int);
+  void ackNewMember(uint);
 
   moodycamel::ConcurrentQueue<LogEntry> clientQueue;
   utils::State state;

@@ -113,7 +113,13 @@ bool RaftControl::appendMemberAddEntry(uint newMachineId) {
 void RaftControl::clearQueue() {
   LogEntry logEntry;
   while (clientQueue.try_dequeue(logEntry)) {
-    raftClient.sendClientAck(logEntry.clientId, logEntry.reqNo, false);
+    if (logEntry.isDummy() || logEntry.isMemberChange() ||
+        logEntry.isMemberChangeCommit()) {
+      if (logEntry.isMemberChange())
+        raftClient.sendAddMemberAck(logEntry.clientId, false);
+    } else {
+      raftClient.sendClientAck(logEntry.clientId, logEntry.reqNo, false);
+    }
   }
 }
 
@@ -194,6 +200,28 @@ void RaftControl::applyLog(bool sendAck, int index) {
                              true);
 }
 
+void RaftControl::ackNewMember(uint index) {
+  auto logEntry = logPersistence.readLog(index);
+  assertm(logEntry.has_value(), "ye logs honi chaiye");
+
+  if (logEntry.value().isMemberChangeCommit() && compareState(utils::LEADER)) {
+    // Log entry conatins machine count present at the time log was entered in
+    // queue
+    if (logEntry.value().reqNo != machineCountPersistence.getMachineCount())
+      return;
+    // TODO: Check and Increment machine count, Ack true or false
+    raftClient.sendAddMemberAck(logEntry.value().clientId, true);
+  } else if (logEntry.value().isMemberChange() &&
+             !compareState(utils::LEADER)) {
+    // Log entry conatins machine count present at the time log was entered in
+    // queue
+    if (logEntry.value().reqNo != machineCountPersistence.getMachineCount())
+      return;
+    // TODO: What happens if I am a candidate now? Think, should step down to
+    // follower
+  }
+}
+
 void RaftControl::stateSyncFunc() {
   while (true) {
     while (logPersistence.readLastCommitIndex() == -1)
@@ -204,6 +232,9 @@ void RaftControl::stateSyncFunc() {
       utils::print("Applying log index", lastSyncIndex + 1);
       applyLog(true, lastSyncIndex + 1);
       logPersistence.incrementLastSyncIndex(lastSyncIndex);
+
+      ackNewMember(lastSyncIndex);
+      // TODO: Increase Machine Count here, step down to follower
     }
     std::this_thread::yield();
   }

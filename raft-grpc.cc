@@ -234,7 +234,9 @@ void RaftClient::sendAddMemberAck(uint clientId, bool success) {
     stubVector.push_back(
         replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
             utils::getAddress(clientId), grpc::InsecureChannelCredentials())));
+    utils::print("New Stub vector size", stubVector.size());
   }
+  utils::print("Send new member ack", clientId, " ", success);
 
   grpc::ClientContext context;
   replicateddatabase::ArgsMemberAddAck query;

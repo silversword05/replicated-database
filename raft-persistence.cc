@@ -27,11 +27,23 @@ void LogPersistence::markSelfSyncBit() {
   std::lock_guard _1(syncLock);
   readLastCommitIndex();
   std::unique_lock _2(lastCommitIndexLock);
+  int lastLogIndex = getLastLogIndex();
 
-  for (int i = lastCommitIndexCache; i <= getLastLogIndex(); i++) {
+  for (int i = lastCommitIndexCache; i <= lastLogIndex; i++) {
     if (i == -1)
       continue;
     markLogSyncBit(i, selfId, true);
+  }
+
+  // TODO: Discuss this case properly
+  if (lastLogIndex == -1)
+    return;
+  auto lastLogEntry = readLog(lastLogIndex);
+  assertm(lastLogEntry.has_value(), "ye log hona chaiye");
+  if (lastLogEntry.value().isMemberChange()) {
+    LogEntry newLogEntry;
+    newLogEntry.fillMemberChangeCommitEntry(lastLogEntry.value());
+    appendLog(newLogEntry);
   }
 }
 
