@@ -189,8 +189,7 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
 void RaftControl::applyLog(bool sendAck, int index) {
   auto logEntry = logPersistence.readLog(index);
   assertm(logEntry.has_value(), "ye logs honi chaiye");
-  if (logEntry.value().isDummy() || logEntry.value().isMemberChange() ||
-      logEntry.value().isMemberChangeCommit())
+  if (logEntry.value().isIgnore())
     return;
 
   db.put(logEntry.value().key, logEntry.value().val);

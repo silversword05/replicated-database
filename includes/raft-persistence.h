@@ -73,7 +73,12 @@ struct LogEntry {
 
   bool isMemberChangeCommit() const {
     uint infinity2 = std::pow(10, utils::intWidth) - 2;
-    return (key == infinity2 && val == infinity2 && clientId != 0 && reqNo != 0);
+    return (key == infinity2 && val == infinity2 && clientId != 0 &&
+            reqNo != 0);
+  }
+
+  bool isIgnore() const {
+    return (isDummy() || isMemberChange() || isMemberChangeCommit());
   }
 };
 
@@ -86,7 +91,7 @@ public:
   }
   uint getMachineCount();
   bool incrementMachineCount(uint); // leader should use this
-  void setMachineCount(uint); // should only be used by the new machine
+  void setMachineCount(uint);       // should only be used by the new machine
 
 private:
   MachineCountPersistence(const std::filesystem::path &);

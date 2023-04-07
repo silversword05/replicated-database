@@ -108,8 +108,9 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
     // TODO: send negative ack to client of oldlogentry (logRet.second), check
     // oldentry hasvalue
     if (oldLogEntry.has_value()) {
-      raftControl.raftClient.sendClientAck(oldLogEntry.value().clientId,
-                                           oldLogEntry.value().reqNo, false);
+      if (!oldLogEntry.value().isIgnore())
+        raftControl.raftClient.sendClientAck(oldLogEntry.value().clientId,
+                                             oldLogEntry.value().reqNo, false);
     }
     ret->set_term(raftControl.electionPersistence.getTerm());
     ret->set_success(true);
