@@ -7,9 +7,51 @@ col_start = "startTime (micro_seconds)"
 col_end = "endTime (micro_seconds)"
 col_lat = "latency (micro_seconds)"
 
-def plotThrouhputOverTime(df):
-    print(df[col_lat].median())
-    print(df[col_lat].quantile(0.99))
+machine_count = 3
+election_timeout_min = 50
+election_timeout_max = 100
+heartbeat_timeout = 1
+
+
+def plotThrouhputOverTime():
+    # Need to give a single csv for whom it will plot
+    raftHome = Path(str(Path.home()) + "/raft-home/")
+    allCSVs = Path.glob(raftHome, "*.csv")
+
+    my_csv = str(next(allCSVs)) # update this with correct csv path
+    df = pd.read_csv(my_csv)
+    df = df.sort_values(by=[col_end]).reset_index()
+    rolling_window = 1000*1000; # 1s
+
+    thrput = np.array([])
+    time_in_sec = np.array([])
+
+    initial_time_microseconds = df[col_end][0]
+    for val in df[col_end]:
+        col_less_than = df[col_end] < (val + rolling_window)
+        col_great_than = val <= df[col_end]
+        col = np.logical_and(col_less_than, col_great_than)
+        
+        thrput = np.append(thrput, col.sum())
+        time_relative_sec = (val - initial_time_microseconds) / rolling_window
+        time_in_sec = np.append(time_in_sec, time_relative_sec)
+    
+    # Plt this time series
+    plt.clf()
+    plt.plot(time_in_sec, thrput)
+    plt.xlabel("Time [seconds]")
+    plt.ylabel("Throughput [requests/sec]")
+    plt.xlim([0,int(np.max(time_in_sec))+1])
+    plt.xticks(np.arange(0, int(np.max(time_in_sec))+2, step=1))
+    plt.yticks(np.arange(0, 1501, step=100))
+    textstr = f'machine count = {machine_count}\n' + \
+            f'election timeout = {election_timeout_min} - {election_timeout_max}ms\n'+\
+            f'heartbeat timeout = {heartbeat_timeout}ms'
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    plt.text(0.3, 1280, textstr, bbox=props)
+    # plt.axvline(x=6, ymin=0, ymax=0.4, color='black', linestyle='--')
+    plt.title("Impact of leader crash on throughput")
+    plt.savefig("Throughput_over_time.png")
 
 def plotLatVsThrput():
     raftHome = Path(str(Path.home()) + "/raft-home/")
@@ -35,8 +77,13 @@ def plotLatVsThrput():
     plt.xlabel("Throughput [requests/sec]")
     plt.ylabel("Median Latency [ms]")
     plt.xticks(np.arange(0, 3001, step=300))
-    plt.yticks(np.arange(0, 20, step=2))
-    plt.savefig("Throughput vs Median Latency.png")
+    plt.yticks(np.arange(0, 21, step=2))
+    textstr = f'machine count = {machine_count}\n' + \
+            f'election timeout = {election_timeout_min} - {election_timeout_max}ms\n'+\
+            f'heartbeat timeout = {heartbeat_timeout}ms'
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    plt.text(50, 17, textstr, bbox=props)
+    plt.savefig("Throughput_vs_Median_Latency.png")
 
     # Plotting thrput vs 99 percentile latency
     plt.clf()
@@ -44,11 +91,15 @@ def plotLatVsThrput():
     plt.xlabel("Throughput [requests/sec]")
     plt.ylabel("99%ile Latency [ms]")
     plt.xticks(np.arange(0, 3001, step=300))
-    plt.yticks(np.arange(0, 20, step=2))
-    plt.savefig("Throughput vs 99 Percentile Latency.png")
-
-
+    plt.yticks(np.arange(0, 21, step=2))
+    textstr = f'machine count = {machine_count}\n' + \
+            f'election timeout = {election_timeout_min} - {election_timeout_max}ms\n'+\
+            f'heartbeat timeout = {heartbeat_timeout}ms'
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    plt.text(50, 17, textstr, bbox=props)
+    plt.savefig("Throughput_vs_99_Percentile_Latency.png")
 
 if __name__ == "__main__":
     plotLatVsThrput()
+    plotThrouhputOverTime()
     
