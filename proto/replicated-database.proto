@@ -68,7 +68,7 @@ service RaftBook {
 }
 
 service MemberBook {
-    rpc AddAck(ArgsMemberAddAck) returns (Empty) {}
+    rpc AddMemberAck(ArgsMemberAddAck) returns (Empty) {}
 }
 
 service ClientBook {

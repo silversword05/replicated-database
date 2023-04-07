@@ -18,6 +18,7 @@ public:
   void toFollower();
   bool compareState(utils::State);
   bool appendClientEntry(uint, uint, uint, uint);
+  bool appendMemberAddEntry(uint);
 
   void consumerFunc(const std::stop_token &);
   void followerFunc(uint, uint, const std::stop_token &);

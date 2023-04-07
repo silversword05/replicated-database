@@ -24,4 +24,17 @@ public:
   ClientRequest(::grpc::ServerContext *,
                 const ::replicateddatabase::ArgsRequest *,
                 ::replicateddatabase::RetRequest *);
+
+  virtual ::grpc::Status AddMember(::grpc::ServerContext *,
+                                   const ::replicateddatabase::ArgsMemberAdd *,
+                                   ::replicateddatabase::RetMemberAdd *);
+};
+
+class MemberServer final : public ::replicateddatabase::MemberBook::Service {
+  std::promise<bool> promiseSuccess;
+public:
+  MemberServer(std::promise<bool> &&);
+  virtual ::grpc::Status AddMemberAck(::grpc::ServerContext *,
+                                const ::replicateddatabase::ArgsMemberAddAck *,
+                                ::replicateddatabase::Empty *);
 };

@@ -101,6 +101,15 @@ bool RaftControl::appendClientEntry(uint key, uint val, uint clientId,
       .term = 0, .key = key, .val = val, .clientId = clientId, .reqNo = reqNo});
 }
 
+bool RaftControl::appendMemberAddEntry(uint newMachineId) {
+  LogEntry logEntry;
+  uint machineCount = machineCountPersistence.getMachineCount();
+  logEntry.fillMemberChangeEntry(newMachineId, machineCount);
+  assertm(newMachineId == machineCount && newMachineId < utils::maxMachineCount,
+          "Abhi zada machine add nahi kar sakte he");
+  return clientQueue.try_enqueue(logEntry);
+}
+
 void RaftControl::clearQueue() {
   LogEntry logEntry;
   while (clientQueue.try_dequeue(logEntry)) {
@@ -114,6 +123,14 @@ void RaftControl::consumerFunc(const std::stop_token &s) {
     while (clientQueue.try_dequeue(logEntry)) {
       logEntry.term = electionPersistence.getTerm();
       logPersistence.appendLog(logEntry);
+
+      if (logEntry.isMemberChange()) {
+        LogEntry newLogEntry;
+        newLogEntry.fillMemberChangeCommitEntry(logEntry);
+        logPersistence.appendLog(newLogEntry);
+        return;
+      }
+
       if (s.stop_requested())
         break;
     }
@@ -166,8 +183,10 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
 void RaftControl::applyLog(bool sendAck, int index) {
   auto logEntry = logPersistence.readLog(index);
   assertm(logEntry.has_value(), "ye logs honi chaiye");
-  if (logEntry.value().isDummy() || logEntry.value().isMemberChange())
+  if (logEntry.value().isDummy() || logEntry.value().isMemberChange() ||
+      logEntry.value().isMemberChangeCommit())
     return;
+
   db.put(logEntry.value().key, logEntry.value().val);
   utils::print("Applying log", logEntry.value().getString());
   if (sendAck)

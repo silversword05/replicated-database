@@ -10,7 +10,10 @@
 
 class RaftClient {
   std::vector<std::unique_ptr<replicateddatabase::RaftBook::Stub>> stubVector;
-  std::unordered_map<int, std::unique_ptr<replicateddatabase::ClientBook::Stub>> stubMap;
+  std::unordered_map<int, std::unique_ptr<replicateddatabase::ClientBook::Stub>>
+      clientStubMap;
+  std::unordered_map<int, std::unique_ptr<replicateddatabase::MemberBook::Stub>>
+      memberStubMap;
   MachineCountPersistence &machineCountPersistence;
 
 public:
@@ -18,9 +21,18 @@ public:
   RaftClient(RaftClient const &) = delete;
   void operator=(RaftClient const &) = delete;
 
-  auto& getClientStub(uint);
+  auto &getClientStub(uint);
 
   std::optional<bool> sendRequestVoteRpc(uint, uint, int, int, uint);
-  std::optional<bool> sendAppendEntryRpc(uint, uint, uint, int, std::string, int, uint);
+  std::optional<bool> sendAppendEntryRpc(uint, uint, uint, int, std::string,
+                                         int, uint);
   void sendClientAck(uint, uint, bool);
+  void sendAddMemberAck(uint, bool);
+};
+
+class MemberClient {
+  auto getStub(uint);
+
+public:
+  std::optional<bool> sendAddMemberRpc(uint);
 };

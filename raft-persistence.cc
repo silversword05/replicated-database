@@ -2,7 +2,8 @@
 
 LogPersistence::LogPersistence(const std::filesystem::path &homeDir,
                                uint selfId_)
-    : selfId(selfId_), machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
+    : selfId(selfId_),
+      machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
   logFs = std::fstream(homeDir / "log.txt", std::ios::app);
   logFs = std::fstream(homeDir / "log.txt",
                        std::ios::in | std::ios::out | std::ios::ate);
@@ -169,12 +170,14 @@ int LogPersistence::readLastSyncIndex() {
 
 void LogPersistence::markLogSyncBit(uint logIndex, uint machineId,
                                     bool updateLastCommit) {
-  assertm(machineId < machineCountPersistence.getMachineCount(), "Ye kon sa naya machine uga diya");
+  assertm(machineId < machineCountPersistence.getMachineCount(),
+          "Ye kon sa naya machine uga diya");
   std::lock_guard _(syncLock);
   auto &majorityVote = logSync[logIndex];
   assertm(!majorityVote.test(machineId), "Boss kyu bhej rahe ho dubara");
   majorityVote.set(machineId);
-  if (majorityVote.count() == (machineCountPersistence.getMachineCount() / 2 + 1) &&
+  if (majorityVote.count() ==
+          (machineCountPersistence.getMachineCount() / 2 + 1) &&
       updateLastCommit)
     updateLastCommitIndex(logIndex);
 }
@@ -220,7 +223,8 @@ bool LogPersistence::isReadable(uint expectedTerm) {
 
 ElectionPersistence::ElectionPersistence(const std::filesystem::path &homeDir,
                                          uint selfId_)
-    : selfId(selfId_), machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
+    : selfId(selfId_),
+      machineCountPersistence(MachineCountPersistence::getInstance(homeDir)) {
   termFsPath = homeDir / "term.txt";
   std::fstream(termFsPath, std::ios::app);
   votedForFsPath = homeDir / "voted-for.txt";
@@ -325,11 +329,13 @@ bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
   return false;
 }
 
-std::pair<bool, bool> ElectionPersistence::incrementMachineCountTermAndSelfVote(
-    uint logMachineCount, uint logTerm) {
+std::pair<bool, bool>
+ElectionPersistence::incrementMachineCountTermAndSelfVote(uint logMachineCount,
+                                                          uint logTerm) {
 
   if (incrementTermAndSelfVote(logTerm))
-    return {true, machineCountPersistence.incrementMachineCount(logMachineCount)};
+    return {true,
+            machineCountPersistence.incrementMachineCount(logMachineCount)};
   return {false, false};
 }
 
@@ -379,4 +385,13 @@ bool MachineCountPersistence::incrementMachineCount(uint logMachineCount) {
     return true;
   }
   return false;
+}
+
+void MachineCountPersistence::setMachineCount(uint newMachineCount) {
+  std::unique_lock _{machineCountLock};
+
+  std::fstream fs(machineCountFsPath, std::ios::in | std::ios::out);
+  fs << newMachineCount;
+  fs.flush();
+  machineCountCache = newMachineCount;
 }

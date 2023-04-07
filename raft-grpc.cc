@@ -141,13 +141,38 @@ RaftServer::ClientRequest(::grpc::ServerContext *,
   return grpc::Status::OK;
 }
 
+::grpc::Status
+RaftServer::AddMember(::grpc::ServerContext *,
+                      const ::replicateddatabase::ArgsMemberAdd *args,
+                      ::replicateddatabase::RetMemberAdd *ret) {
+  utils::print("Received Member change entry", args->machineno());
+  if (raftControl.compareState(utils::LEADER)) {
+    ret->set_success(raftControl.appendMemberAddEntry(args->machineno()));
+  } else {
+    ret->set_success(false);
+  }
+  return grpc::Status::OK;
+}
+
+MemberServer::MemberServer(std::promise<bool> &&addSuccess_)
+    : promiseSuccess(std::move(addSuccess_)) {}
+
+::grpc::Status
+MemberServer::AddMemberAck(::grpc::ServerContext *,
+                           const ::replicateddatabase::ArgsMemberAddAck *args,
+                           ::replicateddatabase::Empty *) {
+  utils::print("Member add ack successfull", args->success());
+  promiseSuccess.set_value(args->success());
+  return grpc::Status::OK;
+}
+
 auto &RaftClient::getClientStub(uint clientId) {
-  if (stubMap.contains(clientId))
-    return stubMap[clientId];
-  stubMap[clientId] =
+  if (clientStubMap.contains(clientId))
+    return clientStubMap[clientId];
+  clientStubMap[clientId] =
       replicateddatabase::ClientBook::NewStub(grpc::CreateChannel(
           utils::getAddress(clientId), grpc::InsecureChannelCredentials()));
-  return stubMap[clientId];
+  return clientStubMap[clientId];
 }
 
 void RaftClient::sendClientAck(uint clientId, uint reqNo, bool processed) {
@@ -201,6 +226,45 @@ RaftClient::sendAppendEntryRpc(uint term, uint selfId, uint logIndex,
   if (!status.ok())
     return {};
   return response.success();
+}
+
+void RaftClient::sendAddMemberAck(uint clientId, bool success) {
+  assertm(clientId == stubVector.size(), "Ye kon sa client he be");
+  if (success) {
+    stubVector.push_back(
+        replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
+            utils::getAddress(clientId), grpc::InsecureChannelCredentials())));
+  }
+
+  grpc::ClientContext context;
+  replicateddatabase::ArgsMemberAddAck query;
+  replicateddatabase::Empty response;
+
+  query.set_success(success);
+  auto tempStub = replicateddatabase::MemberBook::NewStub(grpc::CreateChannel(
+      utils::getAddress(clientId), grpc::InsecureChannelCredentials()));
+  tempStub->AddMemberAck(&context, query, &response);
+}
+
+auto MemberClient::getStub(uint machineId) {
+  return replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
+      utils::getAddress(machineId), grpc::InsecureChannelCredentials()));
+}
+
+std::optional<bool> MemberClient::sendAddMemberRpc(uint newMachineId) {
+  grpc::ClientContext context;
+  replicateddatabase::ArgsMemberAdd query;
+  replicateddatabase::RetMemberAdd response;
+
+  query.set_machineno(newMachineId);
+  for (uint i = 0; i < utils::maxMachineCount; i++) {
+    if (i == newMachineId)
+      continue;
+    auto status = getStub(i)->AddMember(&context, query, &response);
+    if (status.ok())
+      return response.success();
+  }
+  return {};
 }
 
 // int main(int argc, char *argv[]) {

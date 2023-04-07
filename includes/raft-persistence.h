@@ -44,7 +44,7 @@ struct LogEntry {
     val = std::pow(10, utils::intWidth) - 1;
   }
 
-  bool isDummy() {
+  bool isDummy() const {
     uint infinity = std::pow(10, utils::intWidth) - 1;
     return (key == infinity && val == infinity && clientId == 0 && reqNo == 0);
   }
@@ -57,9 +57,23 @@ struct LogEntry {
     val = std::pow(10, utils::intWidth) - 1;
   }
 
-  bool isMemberChange() {
+  bool isMemberChange() const {
     uint infinity = std::pow(10, utils::intWidth) - 1;
     return (key == infinity && val == infinity && clientId != 0 && reqNo != 0);
+  }
+
+  void fillMemberChangeCommitEntry(const LogEntry &memberChangeEntry) {
+    assertm(memberChangeEntry.isMemberChange(), "Bsdk memeber change bhej");
+    term = memberChangeEntry.term;
+    clientId = memberChangeEntry.clientId;
+    reqNo = memberChangeEntry.reqNo;
+    key = std::pow(10, utils::intWidth) - 2;
+    val = std::pow(10, utils::intWidth) - 2;
+  }
+
+  bool isMemberChangeCommit() const {
+    uint infinity2 = std::pow(10, utils::intWidth) - 2;
+    return (key == infinity2 && val == infinity2 && clientId != 0 && reqNo != 0);
   }
 };
 
@@ -71,7 +85,8 @@ public:
     return instance;
   }
   uint getMachineCount();
-  bool incrementMachineCount(uint);
+  bool incrementMachineCount(uint); // leader should use this
+  void setMachineCount(uint); // should only be used by the new machine
 
 private:
   MachineCountPersistence(const std::filesystem::path &);
