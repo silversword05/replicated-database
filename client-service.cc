@@ -14,7 +14,7 @@ ClientServer::ClientAck(::grpc::ServerContext *,
     assertm(endTime == -1, "endTime getting updated twice");
     if (args->processed()) {
       tokenSet[args->reqno()] = TokenState::SUCCESS;
-      latencyMap[args->reqno()].second = utils::getCurrTimeinMs();
+      latencyMap[args->reqno()].second = utils::getCurrTimeinMicro();
     } else {
       tokenSet[args->reqno()] = TokenState::FAIL;
       latencyMap[args->reqno()].second =
@@ -110,7 +110,7 @@ std::optional<uint> ClientService::put(uint key, uint val) {
   // Setting these before as this as RTT time being checked
   std::lock_guard _(server.updateLock);
   server.tokenSet[reqNo] = TokenState::WAITING;
-  std::pair<long int, long int> timePair(utils::getCurrTimeinMs(), -1);
+  std::pair<long int, long int> timePair(utils::getCurrTimeinMicro(), -1);
   server.latencyMap[reqNo] = timePair;
 
   if (lastLeaderChannel != -1) { // In case we have a last put channel
@@ -165,7 +165,7 @@ std::optional<uint> ClientService::get(uint key) {
 }
 
 void ClientService::outputLatencyMap(std::fstream &outputFs) {
-  outputFs << "reqNo,startTime,endTime\n";
+  outputFs << "reqNo,startTime (micro_seconds),endTime (micro_seconds)\n";
   for (auto itr = server.latencyMap.begin(); itr != server.latencyMap.end();
        itr++) {
     auto keyReqNo = itr->first;

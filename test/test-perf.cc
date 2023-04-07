@@ -21,20 +21,22 @@ int main(int argc, char *argv[]) {
 
   std::unordered_set<uint> reqNumSet;
 
-  auto start = utils::getCurrTimeinMs();
+  auto start = utils::getCurrTimeinMicro();
   // Do some put operations
   for (uint i = 0; i < reqs; i++) {
     auto val = service.put(i, i + 100);
-    // std::this_thread::sleep_for(std::chrono::microseconds{microSleep});
+    std::this_thread::sleep_for(std::chrono::microseconds{microSleep});
     if (val.has_value()) {
       reqNumSet.insert(val.value());
     }
   }
-  auto timeInSec = (utils::getCurrTimeinMs() - start) / 1000;
+  auto timeInSec = (utils::getCurrTimeinMicro() - start) / (1000 * 1000);
+  if (timeInSec == 0)
+    utils::print("Please increase number of requests as time not sufficient");
   auto orgThrput = reqs / timeInSec;
 
-  utils::print(reqs, "put requests done with original Throughput of",
-               orgThrput, "!!");
+  utils::print(reqs, "put requests done with original Throughput of", orgThrput,
+               "!!");
 
   // check if put done
   for (auto elem : reqNumSet) {
@@ -49,7 +51,8 @@ int main(int argc, char *argv[]) {
   }
 
   std::fstream outputFs;
-  outputFs = std::fstream(utils::home_dir / "raft-home/clientLatency.csv",
+  std::string fileName = "clientLatency_" + std::to_string(orgThrput) + ".csv";
+  outputFs = std::fstream(utils::home_dir / "raft-home/" / fileName,
                           std::ios::out | std::ios::trunc);
   service.outputLatencyMap(outputFs);
 

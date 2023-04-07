@@ -18,9 +18,9 @@ constexpr uint intWidth = 8;
 constexpr uint memberVariableLog = 5;
 constexpr uint machineCount = 3;
 constexpr uint termStart = 1;
-constexpr uint baseSleepTime = 5000;
-constexpr uint maxSleepTime = 10000;
-constexpr uint followerSleep = 3000;
+constexpr uint baseSleepTime = 50; //millisecond
+constexpr uint maxSleepTime = 100; //millisecond
+constexpr uint followerSleep = 1; //millisecond
 constexpr bool forceLocalHost = true;
 constexpr bool cleanStart = true;
 
@@ -49,8 +49,8 @@ inline std::string getAddress(uint machineId) {
   return getHostName(machineId) + ":5005" + std::to_string(machineId);
 }
 
-inline long long int getCurrTimeinMs() {
-  return duration_cast<std::chrono::milliseconds>(
+inline long long int getCurrTimeinMicro() {
+  return duration_cast<std::chrono::microseconds>(
              std::chrono::system_clock::now().time_since_epoch())
       .count();
 }
