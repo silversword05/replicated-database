@@ -28,8 +28,6 @@ void startRaft(const auto &homeDir, const auto selfId) {
 }
 
 bool startJoinRequest(const auto selfId) {
-  assertm(MemberClient().sendAddMemberRpc(selfId), "Tata, bye bye, khatam !!");
-
   std::promise<bool> promiseSuccess;
   auto futureSuccess = promiseSuccess.get_future();
 
@@ -43,6 +41,8 @@ bool startJoinRequest(const auto selfId) {
     return std::unique_ptr<grpc::Server>(builder.BuildAndStart());
   }();
   std::jthread _([&] { server->Wait(); });
+
+  assertm(MemberClient().sendAddMemberRpc(selfId), "Tata, bye bye, khatam !!");
 
   auto success = futureSuccess.get();
   server->Shutdown();
@@ -68,9 +68,12 @@ int main(int argc, char *argv[]) {
     auto success = startJoinRequest(selfId);
     utils::print("Join result", success);
     utils::print("New machine count", selfId + 1);
-    MachineCountPersistence::getInstance(homeDir).setMachineCount(selfId + 1);
-    // TODO: Increase self machine count on success
-    // Discuss: Has to change machine count on updateCommitIndex
+    if(success) {
+      MachineCountPersistence::getInstance(homeDir).setMachineCount(selfId + 1);
+      //startRaft(homeDir, selfId);
+    } else {
+      utils::print("Cannot start raft");
+    }
   } else {
     startRaft(homeDir, selfId);
   }

@@ -176,6 +176,7 @@ auto &RaftClient::getClientStub(uint clientId) {
 }
 
 void RaftClient::sendClientAck(uint clientId, uint reqNo, bool processed) {
+  utils::print("Send client ack called with", clientId, reqNo, processed);
   assertm(clientId >= machineCountPersistence.getMachineCount(),
           "sever he bro");
   grpc::ClientContext context;
@@ -271,7 +272,7 @@ bool MemberClient::sendAddMemberRpc(uint newMachineId) {
     if (sendRpc(i))
       return true;
   }
-  return {};
+  return false;
 }
 
 // int main(int argc, char *argv[]) {

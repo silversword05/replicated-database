@@ -63,7 +63,7 @@ struct LogEntry {
   }
 
   void fillMemberChangeCommitEntry(const LogEntry &memberChangeEntry) {
-    assertm(memberChangeEntry.isMemberChange(), "Bsdk memeber change bhej");
+    assertm(memberChangeEntry.isMemberChange(), " memeber change bhej");
     term = memberChangeEntry.term;
     clientId = memberChangeEntry.clientId;
     reqNo = memberChangeEntry.reqNo;

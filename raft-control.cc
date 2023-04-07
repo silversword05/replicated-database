@@ -204,23 +204,23 @@ void RaftControl::ackNewMember(uint index) {
   auto logEntry = logPersistence.readLog(index);
   assertm(logEntry.has_value(), "ye logs honi chaiye");
 
+  std::lock_guard _(stateChangeLock);
   if (logEntry.value().isMemberChangeCommit() && compareState(utils::LEADER)) {
-    // Log entry conatins machine count present at the time log was entered in
-    // queue
-    if (logEntry.value().reqNo != machineCountPersistence.getMachineCount())
-      return;
-    // TODO: Check and Increment machine count, Ack true or false
-    raftClient.sendAddMemberAck(logEntry.value().clientId, true);
+    uint currTerm = electionPersistence.getTerm();
+    auto [successTerm, successMachineCount] =
+        electionPersistence.incrementMachineCountTermAndSelfVote(
+            logEntry.value().reqNo, currTerm);
+    assertm(successTerm, "State change lock ke baad kaise diff ho raha he");
+    raftClient.sendAddMemberAck(logEntry.value().clientId, successMachineCount);
+    toFollower();
   } else if (logEntry.value().isMemberChange() &&
              !compareState(utils::LEADER)) {
-    // Log entry conatins machine count present at the time log was entered in
-    // queue
-    if (logEntry.value().reqNo != machineCountPersistence.getMachineCount())
-      return;
-    // Send Ack to ensure stubVector is updated
-    raftClient.sendAddMemberAck(logEntry.value().clientId, true);
-    // TODO: What happens if I am a candidate now? Think, should step down to
-    // follower
+    uint currTerm = electionPersistence.getTerm();
+    auto [successTerm, successMachineCount] =
+        electionPersistence.incrementMachineCountTermAndSelfVote(
+            logEntry.value().reqNo, currTerm);
+    assertm(successTerm, "State change lock ke baad kaise diff ho raha he");
+    raftClient.sendAddMemberAck(logEntry.value().clientId, successMachineCount);
   }
 }
 
@@ -231,7 +231,6 @@ void RaftControl::stateSyncFunc() {
 
     int lastSyncIndex = logPersistence.readLastSyncIndex();
     while (lastSyncIndex + 1 <= logPersistence.readLastCommitIndex()) {
-      utils::print("Applying log index", lastSyncIndex + 1);
       applyLog(true, lastSyncIndex + 1);
       logPersistence.incrementLastSyncIndex(lastSyncIndex);
 

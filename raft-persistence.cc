@@ -343,9 +343,9 @@ bool ElectionPersistence::incrementTermAndSelfVote(uint oldTerm) {
 
 std::pair<bool, bool>
 ElectionPersistence::incrementMachineCountTermAndSelfVote(uint logMachineCount,
-                                                          uint logTerm) {
+                                                          uint currTerm) {
 
-  if (incrementTermAndSelfVote(logTerm))
+  if (incrementTermAndSelfVote(currTerm))
     return {true,
             machineCountPersistence.incrementMachineCount(logMachineCount)};
   return {false, false};
@@ -388,6 +388,7 @@ bool MachineCountPersistence::incrementMachineCount(uint logMachineCount) {
 
   std::fstream fs(machineCountFsPath, std::ios::in | std::ios::out);
   assertm(fs >> machineCountCache, "File should be readable");
+  assertm(machineCountCache >= logMachineCount, "Step by step increase karo bhai");
   if (machineCountCache == logMachineCount) {
     fs.clear();
     fs.seekg(0, std::ios::beg);
