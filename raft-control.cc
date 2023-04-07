@@ -202,9 +202,13 @@ void RaftControl::applyLog(bool sendAck, int index) {
 void RaftControl::ackNewMember(uint index) {
   auto logEntry = logPersistence.readLog(index);
   assertm(logEntry.has_value(), "ye logs honi chaiye");
+  if (!logEntry.value().isIgnore())
+    return;
 
   std::lock_guard _(stateChangeLock);
   if (logEntry.value().isMemberChangeCommit() && compareState(utils::LEADER)) {
+    if (machineCountPersistence.getMachineCount() > logEntry.value().reqNo)
+      return;
     uint currTerm = electionPersistence.getTerm();
     auto [successTerm, successMachineCount] =
         electionPersistence.incrementMachineCountTermAndSelfVote(
@@ -214,6 +218,8 @@ void RaftControl::ackNewMember(uint index) {
     toFollower();
   } else if (logEntry.value().isMemberChange() &&
              !compareState(utils::LEADER)) {
+    if (machineCountPersistence.getMachineCount() > logEntry.value().reqNo)
+      return;
     uint currTerm = electionPersistence.getTerm();
     auto [successTerm, successMachineCount] =
         electionPersistence.incrementMachineCountTermAndSelfVote(

@@ -124,6 +124,7 @@ LogPersistence::checkAndWriteLog(uint logIndex, const LogEntry &logEntry,
             "log entry dont match when leaderLastCommitIndex small");
     return {true, {}};
   }
+  probableCommitIndex = std::max(probableCommitIndex, readLastCommitIndex());
   if (logIndex == 0)
     return {true, writeLog(logIndex, logEntry, probableCommitIndex)};
 
@@ -146,7 +147,8 @@ bool LogPersistence::checkEmptyHeartbeat(uint logIndex,
     return false;
   if (lastToOneEntry.value().term != prevTerm)
     return false;
-  updateLastCommitIndex(leaderLastCommitIndex);
+  int probableCommitIndex = std::max(leaderLastCommitIndex, readLastCommitIndex());
+  updateLastCommitIndex(probableCommitIndex);
   return true;
 }
 
