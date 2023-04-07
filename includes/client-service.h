@@ -26,6 +26,7 @@ class ClientService {
   std::jthread serverThread;
   uint reqNo;
   uint clientId;
+  int lastLeaderChannel{-1};
 
 public:
   ClientServer server;

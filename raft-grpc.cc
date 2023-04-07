@@ -253,18 +253,23 @@ auto MemberClient::getStub(uint machineId) {
       utils::getAddress(machineId), grpc::InsecureChannelCredentials()));
 }
 
-std::optional<bool> MemberClient::sendAddMemberRpc(uint newMachineId) {
-  grpc::ClientContext context;
-  replicateddatabase::ArgsMemberAdd query;
-  replicateddatabase::RetMemberAdd response;
+bool MemberClient::sendAddMemberRpc(uint newMachineId) {
 
-  query.set_machineno(newMachineId);
+  auto sendRpc = [&](uint serverId) {
+    grpc::ClientContext context;
+    replicateddatabase::ArgsMemberAdd query;
+    replicateddatabase::RetMemberAdd response;
+
+    query.set_machineno(newMachineId);
+    auto status = getStub(serverId)->AddMember(&context, query, &response);
+    return (status.ok() && response.success());
+  };
+
   for (uint i = 0; i < utils::maxMachineCount; i++) {
     if (i == newMachineId)
       continue;
-    auto status = getStub(i)->AddMember(&context, query, &response);
-    if (status.ok())
-      return response.success();
+    if (sendRpc(i))
+      return true;
   }
   return {};
 }

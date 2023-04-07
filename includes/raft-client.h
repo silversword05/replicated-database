@@ -34,5 +34,5 @@ class MemberClient {
   auto getStub(uint);
 
 public:
-  std::optional<bool> sendAddMemberRpc(uint);
+  bool sendAddMemberRpc(uint);
 };

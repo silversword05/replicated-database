@@ -1,26 +1,27 @@
 #include <client-service.h>
 
-::grpc::Status ClientServer::ClientAck(::grpc::ServerContext *,
-                                       const ::replicateddatabase::ArgsAck *args,
-                                       ::replicateddatabase::Empty *) {
-  assertm(tokenSet.contains(args->reqno()), "Request number not in the token set");
+::grpc::Status
+ClientServer::ClientAck(::grpc::ServerContext *,
+                        const ::replicateddatabase::ArgsAck *args,
+                        ::replicateddatabase::Empty *) {
+  assertm(tokenSet.contains(args->reqno()),
+          "Request number not in the token set");
   if (tokenSet[args->reqno()] == TokenState::WAITING) {
     if (args->processed()) {
       tokenSet[args->reqno()] = TokenState::SUCCESS;
-    }
-    else {
+    } else {
       tokenSet[args->reqno()] = TokenState::FAIL;
     }
-  }
-  else {
+  } else {
     if (args->processed()) {
-      assertm(tokenSet[args->reqno()] ==  TokenState::SUCCESS, "Got SUCCESS then a FAIL!!");
-    }
-    else {
-      assertm(tokenSet[args->reqno()] == TokenState::FAIL, "Got FAIL then SUCESS!!");
+      assertm(tokenSet[args->reqno()] == TokenState::SUCCESS,
+              "Got SUCCESS then a FAIL!!");
+    } else {
+      assertm(tokenSet[args->reqno()] == TokenState::FAIL,
+              "Got FAIL then SUCESS!!");
     }
   }
-  
+
   return grpc::Status::OK;
 }
 
@@ -50,13 +51,12 @@ ClientService::ClientService(uint selfId) {
   }
 }
 
-ClientService::~ClientService() {
-  serverPtr->Shutdown();
-}
+ClientService::~ClientService() { serverPtr->Shutdown(); }
 
 std::optional<uint>
 ClientService::sendClientRequestRPC(uint clientId, uint reqNo, uint key,
                                     uint val, std::string type, uint toId) {
+  utils::print("Send Request from the client to server ", toId);
   assertm(toId < utils::maxMachineCount, "Client Getting Wrong Machine ID");
   grpc::ClientContext context;
   replicateddatabase::ArgsRequest query;
@@ -97,9 +97,18 @@ bool ClientService::putBlocking(uint key, uint val) {
 
 std::optional<uint> ClientService::put(uint key, uint val) {
   reqNo++;
+  if (lastLeaderChannel != -1) { // In case we have a last put channel
+    auto ret = sendClientRequestRPC(clientId, reqNo, key, val, "put",
+                                    lastLeaderChannel);
+    if (ret.has_value()) {
+      server.tokenSet[reqNo] = TokenState::WAITING;
+      return reqNo;
+    }
+  }
   for (uint i = 0; i < utils::maxMachineCount; i++) {
     auto ret = sendClientRequestRPC(clientId, reqNo, key, val, "put", i);
     if (ret.has_value()) {
+      lastLeaderChannel = i; // Next time we will save time
       server.tokenSet[reqNo] = TokenState::WAITING;
       return reqNo;
     }
@@ -109,15 +118,29 @@ std::optional<uint> ClientService::put(uint key, uint val) {
 }
 
 std::optional<bool> ClientService::checkPutDone(uint requestNum) {
-  if (server.tokenSet[requestNum] == TokenState::WAITING) return {};
-  if (server.tokenSet[requestNum] == TokenState::SUCCESS) return true;
+  if (server.tokenSet[requestNum] == TokenState::WAITING)
+    return {};
+  if (server.tokenSet[requestNum] == TokenState::SUCCESS)
+    return true;
   return false;
 }
 
 std::optional<uint> ClientService::get(uint key) {
-  for (uint i=0; i < utils::maxMachineCount; i++) {
-    auto ret = sendClientRequestRPC(clientId, 0, key, 0, "get", i);
-    if (ret.has_value()) return ret.value();
+  if (lastLeaderChannel != -1) {
+    auto ret =
+        sendClientRequestRPC(clientId, 0, key, 0, "get", lastLeaderChannel);
+    if (ret.has_value())
+      return ret.value();
   }
-  return  {};
+
+  // Try all channels and update last get channel
+  for (uint i = 0; i < utils::maxMachineCount; i++) {
+    auto ret = sendClientRequestRPC(clientId, 0, key, 0, "get", i);
+    if (ret.has_value()) {
+      lastLeaderChannel = i;
+      return ret.value();
+    }
+      
+  }
+  return {};
 }

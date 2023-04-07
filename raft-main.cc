@@ -28,7 +28,7 @@ void startRaft(const auto &homeDir, const auto selfId) {
 }
 
 bool startJoinRequest(const auto selfId) {
-  MemberClient().sendAddMemberRpc(selfId);
+  assertm(MemberClient().sendAddMemberRpc(selfId), "Tata, bye bye, khatam !!");
 
   std::promise<bool> promiseSuccess;
   auto futureSuccess = promiseSuccess.get_future();

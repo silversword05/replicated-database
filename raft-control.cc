@@ -217,6 +217,8 @@ void RaftControl::ackNewMember(uint index) {
     // queue
     if (logEntry.value().reqNo != machineCountPersistence.getMachineCount())
       return;
+    // Send Ack to ensure stubVector is updated
+    raftClient.sendAddMemberAck(logEntry.value().clientId, true);
     // TODO: What happens if I am a candidate now? Think, should step down to
     // follower
   }
