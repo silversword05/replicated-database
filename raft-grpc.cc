@@ -231,8 +231,8 @@ RaftClient::sendAppendEntryRpc(uint term, uint selfId, uint logIndex,
 }
 
 void RaftClient::sendAddMemberAck(uint clientId, bool success) {
-  assertm(clientId == stubVector.size(), "Ye kon sa client he be");
   if (success) {
+    assertm(clientId == stubVector.size(), "Ye kon sa client he be");
     stubVector.push_back(
         replicateddatabase::RaftBook::NewStub(grpc::CreateChannel(
             utils::getAddress(clientId), grpc::InsecureChannelCredentials())));

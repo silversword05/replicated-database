@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     utils::print("New machine count", selfId + 1);
     if(success) {
       MachineCountPersistence::getInstance(homeDir).setMachineCount(selfId + 1);
-      //startRaft(homeDir, selfId);
+      startRaft(homeDir, selfId);
     } else {
       utils::print("Cannot start raft");
     }
