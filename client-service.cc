@@ -4,9 +4,17 @@
 ClientServer::ClientAck(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsAck *args,
                         ::replicateddatabase::Empty *) {
+  std::string tmp;
+  if (args->processed()) {
+    tmp = "+ve";
+  }
+  else {
+    tmp = "-ve";
+  }
   assertm(tokenSet.contains(args->reqno()),
           "Request number not in the token set");
   if (tokenSet[args->reqno()] == TokenState::WAITING) {
+    utils::print2("Received", tmp, "ACK for request Num:", args->reqno());
     if (args->processed()) {
       tokenSet[args->reqno()] = TokenState::SUCCESS;
     } else {

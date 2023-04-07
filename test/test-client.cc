@@ -6,8 +6,8 @@ int main(int argc, char *argv[]) {
   uint clientId = std::stoi(argv[1]);
   if (clientId < utils::initialMachineCount) {
     utils::print("Client Id (", clientId,
-                 ") cannot be less than machine count (", utils::initialMachineCount,
-                 ").");
+                 ") cannot be less than machine count (",
+                 utils::initialMachineCount, ").");
     exit(1);
   }
 
@@ -18,7 +18,9 @@ int main(int argc, char *argv[]) {
   std::unordered_set<uint> reqNumSet;
   // Do some put operations
   for (uint i = 0; i < reqs; i++) {
+    utils::print2("CLIENT putting key:", i, "val:", i + 100);
     auto val = service.put(i, i + 100);
+    std::this_thread::sleep_for(std::chrono::milliseconds{1000});
     if (val.has_value()) {
       reqNumSet.insert(val.value());
     }
@@ -37,8 +39,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  auto val = service.get(100);
-  utils::print("Retrived val ",val.value());
+  // auto val = service.get(3);
+  // utils::print("Retrived val ", val.value());
 
   return 0;
 }

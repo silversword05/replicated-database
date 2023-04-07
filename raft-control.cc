@@ -168,6 +168,8 @@ void RaftControl::followerFunc(uint localTerm, uint candidateId,
       } else if (syncSuccess.has_value() && !syncSuccess.value()) {
         lastSyncIndex--;
       }
+      std::this_thread::sleep_for(
+          std::chrono::milliseconds{utils::followerSleep});
     } else {
       // blank heartbeat
       int prevLogTerm = -1;
@@ -288,10 +290,14 @@ RaftControl::RaftControl(const std::filesystem::path &homeDir, uint selfId,
         return this->electionPersistence.getTerm();
       } else {
         if (this->followerToCandidate(localTerm)) {
+          utils::print2("Machine:", this->selfId,
+                        "made CANDIDATE for term:", localTerm);
           if (requestVotes()) {
             if (!this->candidateToLeader(localTerm))
               assertm(!this->candidateToFollower(),
                       "Pahele to candidate baan jana chaiye");
+            utils::print2("Machine:", this->selfId,
+                          "elected as the LEADER for term:", localTerm);
           } else {
             this->candidateToFollower();
           }

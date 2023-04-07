@@ -17,6 +17,7 @@ RaftServer::RaftServer(RaftControl &raftControl_) : raftControl(raftControl_) {}
 RaftServer::RequestVote(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsVote *args,
                         ::replicateddatabase::RetVote *ret) {
+  utils::print2("Requesting vote by candidate:", args->candidateid(), "for term:", args->term());
   std::lock_guard _(rpcLock);
   raftControl.heartbeatRecv.store(true);
 
@@ -66,6 +67,12 @@ RaftServer::AppendEntries(::grpc::ServerContext *,
   std::lock_guard _(rpcLock);
   raftControl.heartbeatRecv.store(true);
 
+  if (args->entry().empty()) {
+    utils::print2("HEARTBEAT!!");
+  }
+  else {
+    utils::print2("AppendEntries leader:", args->leaderid(), "for logIndex:", args->logindex(), "term:", args->term());
+  }
   utils::print("AppendEntries: Leader Info");
   utils::print("term: ", args->term(), ";leaderId: ", args->leaderid(),
                ";logIndex: ", args->logindex(),

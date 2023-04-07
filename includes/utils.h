@@ -21,9 +21,10 @@ constexpr uint maxMachineCount = 10;
 constexpr uint termStart = 1;
 constexpr uint baseSleepTime = 5000;
 constexpr uint maxSleepTime = 10000;
-constexpr uint followerSleep = 3000;
+constexpr uint followerSleep = 1000;
 constexpr bool forceLocalHost = true;
 constexpr bool cleanStart = false;
+constexpr bool printOldLogs = false;
 
 enum State { FOLLOWER, CANDIDATE, LEADER };
 
@@ -52,6 +53,7 @@ inline std::string getAddress(uint machineId) {
 
 inline void print() { std::cout << std::endl; }
 template <typename T> inline void print(const T &t) {
+  if (!printOldLogs) return;
   if constexpr (std::is_same_v<T, bool>)
     std::cout << std::boolalpha << t << std::endl;
   else
@@ -59,6 +61,7 @@ template <typename T> inline void print(const T &t) {
 }
 template <typename First, typename... Rest>
 inline void print(const First &first, const Rest &...rest) {
+  if (!printOldLogs) return;
   if constexpr (std::is_same_v<First, bool>) {
     std::cout << std::boolalpha << first << " ";
   } else {
@@ -66,5 +69,23 @@ inline void print(const First &first, const Rest &...rest) {
   }
 
   print(rest...); // recursive call using pack expansion syntax
+}
+
+inline void print2() { std::cout << std::endl; }
+template <typename T> inline void print2(const T &t) {
+  if constexpr (std::is_same_v<T, bool>)
+    std::cout << std::boolalpha << t << std::endl;
+  else
+    std::cout << t << std::endl;
+}
+template <typename First, typename... Rest>
+inline void print2(const First &first, const Rest &...rest) {
+  if constexpr (std::is_same_v<First, bool>) {
+    std::cout << std::boolalpha << first << " ";
+  } else {
+    std::cout << first << " ";
+  }
+
+  print2(rest...); // recursive call using pack expansion syntax
 }
 } // namespace utils
