@@ -68,6 +68,9 @@ ClientService::sendClientRequestRPC(uint clientId, uint reqNo, uint key,
   utils::print("Send Request from the client to server ", toId);
   assertm(toId < utils::maxMachineCount, "Client Getting Wrong Machine ID");
   grpc::ClientContext context;
+  auto deadline = std::chrono::system_clock::now() +
+                        std::chrono::milliseconds(100);
+  context.set_deadline(deadline);
   replicateddatabase::ArgsRequest query;
   replicateddatabase::RetRequest response;
 
