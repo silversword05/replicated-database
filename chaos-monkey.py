@@ -9,7 +9,6 @@ import subprocess
 def chaos_monkey(p: float, t: int):
     ip = subprocess.getoutput("ifconfig | grep '10.10' | xargs | cut -d ' ' -f2")
     while(True):
-        time.sleep(t)
         r = random.uniform(0,1)
         if r < p:
             print("Performing partition")
@@ -18,6 +17,7 @@ def chaos_monkey(p: float, t: int):
         else:
             print("Withdrawing partitions")
             os.system("sudo iptables -F")
+        time.sleep(t)
 
 def last_call():
     os.system("sudo iptables -F")
