@@ -29,3 +29,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     signal.signal(signal.SIGINT, lambda x,y: last_call())
     chaos_monkey(args.p, args.ip)
+
+# echo $(ifconfig | grep '10.10' | xargs | cut -d " " -f2)
