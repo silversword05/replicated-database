@@ -189,6 +189,9 @@ void RaftClient::sendClientAck(uint clientId, uint reqNo, bool processed) {
   assertm(clientId >= machineCountPersistence.getMachineCount(),
           "sever he bro");
   grpc::ClientContext context;
+  auto deadline = std::chrono::system_clock::now() +
+                  std::chrono::milliseconds(100);
+  context.set_deadline(deadline);
   replicateddatabase::ArgsAck query;
   replicateddatabase::Empty response;
 
@@ -202,6 +205,9 @@ std::optional<bool> RaftClient::sendRequestVoteRpc(uint term, uint selfId,
                                                    int lastLogTerm, uint toId) {
   assertm(selfId < machineCountPersistence.getMachineCount(), "nayi machine");
   grpc::ClientContext context;
+  auto deadline = std::chrono::system_clock::now() +
+                  std::chrono::milliseconds(100);
+  context.set_deadline(deadline);
   replicateddatabase::ArgsVote query;
   replicateddatabase::RetVote response;
 
@@ -222,6 +228,9 @@ RaftClient::sendAppendEntryRpc(uint term, uint selfId, uint logIndex,
                                int leaderCommitIndex, uint toId) {
   assertm(selfId < machineCountPersistence.getMachineCount(), "nayi machine");
   grpc::ClientContext context;
+  auto deadline = std::chrono::system_clock::now() +
+                  std::chrono::milliseconds(100);
+  context.set_deadline(deadline);
   replicateddatabase::ArgsAppend query;
   replicateddatabase::RetAppend response;
 
@@ -249,6 +258,9 @@ void RaftClient::sendAddMemberAck(uint clientId, bool success) {
   utils::print("Send new member ack", clientId, " ", success);
 
   grpc::ClientContext context;
+  auto deadline = std::chrono::system_clock::now() +
+                  std::chrono::milliseconds(100);
+  context.set_deadline(deadline);
   replicateddatabase::ArgsMemberAddAck query;
   replicateddatabase::Empty response;
 
@@ -267,6 +279,9 @@ bool MemberClient::sendAddMemberRpc(uint newMachineId) {
 
   auto sendRpc = [&](uint serverId) {
     grpc::ClientContext context;
+    auto deadline = std::chrono::system_clock::now() +
+                    std::chrono::milliseconds(100);
+    context.set_deadline(deadline);
     replicateddatabase::ArgsMemberAdd query;
     replicateddatabase::RetMemberAdd response;
 
