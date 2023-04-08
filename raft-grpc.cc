@@ -180,7 +180,7 @@ auto &RaftClient::getClientStub(uint clientId) {
     return clientStubMap[clientId];
   clientStubMap[clientId] =
       replicateddatabase::ClientBook::NewStub(grpc::CreateChannel(
-          utils::getAddress(clientId), grpc::InsecureChannelCredentials()));
+          utils::getClientAddress(), grpc::InsecureChannelCredentials()));
   return clientStubMap[clientId];
 }
 

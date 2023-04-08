@@ -41,7 +41,7 @@ ClientService::ClientService(uint selfId) {
     grpc::ServerBuilder builder;
 
     this->serverPtr = std::move([&]() {
-      builder.AddListeningPort(utils::getAddress(selfId),
+      builder.AddListeningPort(utils::getClientAddress(),
                                grpc::InsecureServerCredentials());
       builder.RegisterService(&(this->server));
       return std::unique_ptr<grpc::Server>(builder.BuildAndStart());

@@ -22,7 +22,7 @@ constexpr uint termStart = 1;
 constexpr uint baseSleepTime = 5000;
 constexpr uint maxSleepTime = 10000;
 constexpr uint followerSleep = 1000;
-constexpr bool forceLocalHost = true;
+constexpr bool forceLocalHost = false;
 constexpr bool cleanStart = false;
 constexpr bool printOldLogs = false;
 
@@ -49,6 +49,10 @@ inline std::string getAddress(uint machineId) {
   if constexpr (forceLocalHost)
     return "localhost:5005" + std::to_string(machineId);
   return getHostName(machineId) + ":5005" + std::to_string(machineId);
+}
+
+inline std::string getClientAddress() {
+  return getHostName(1) + ":5005" + std::to_string(9);
 }
 
 inline void print() { std::cout << std::endl; }
