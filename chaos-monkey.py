@@ -4,10 +4,12 @@ import argparse
 import sys
 import os
 import signal
+import subprocess
 
-def chaos_monkey(p, ip):
+def chaos_monkey(p):
+    ip = subprocess.getoutput("ifconfig | grep '10.10' | xargs | cut -d ' ' -f2")
     while(True):
-        time.sleep(5)
+        time.sleep(10)
         r = random.uniform(0,1)
         if r < p:
             print("Performing partition")
@@ -25,7 +27,6 @@ def last_call():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", default=0.3, type=float, help="probability of partition")
-    parser.add_argument("-ip", required=True, type=str, help="ip of the node to be partitioned")
     args = parser.parse_args()
     signal.signal(signal.SIGINT, lambda x,y: last_call())
     chaos_monkey(args.p, args.ip)
