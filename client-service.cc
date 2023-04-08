@@ -4,6 +4,7 @@
 ClientServer::ClientAck(::grpc::ServerContext *,
                         const ::replicateddatabase::ArgsAck *args,
                         ::replicateddatabase::Empty *) {
+  return grpc::Status::OK;
   std::string tmp;
   if (args->processed()) {
     tmp = "+ve";
