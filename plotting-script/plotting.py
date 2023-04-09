@@ -22,28 +22,37 @@ def plotThrouhputOverTime():
     # allCSVs = Path.glob(raftHome, "*.csv")
 
     # my_csv = str(next(allCSVs)) # update this with correct csv path
-    my_csv = '/users/mpatel48/replicated-database/plotting-script/data/crash_impact_election_timeout_2-3/clientLatency_980.csv'
+    my_csv = '/users/amondal5/replicated-database/plotting-script/data/crash_impact_election_timeout_2-3/clientLatency_980.csv'
     df = pd.read_csv(my_csv)
     df = df.sort_values(by=[col_end]).reset_index()
     df = df[(df != -1).all(1)].reset_index()
-    rolling_window = 1000*1000; # 1s
+    # rolling_window = 1000*1000; # 1s
+    rolling_window = 100*1000 #0.1s
 
     thrput = np.array([])
     time_in_sec = np.array([])
 
     initial_time_microseconds = df[col_end][0]
     for val in df[col_end]:
-        col_less_than = df[col_end] < (val + rolling_window)
-        col_great_than = val <= df[col_end]
+        col_less_than = df[col_end] < (val + (rolling_window/2) )
+        col_great_than = (val - (rolling_window/2)) <= df[col_end]
         col = np.logical_and(col_less_than, col_great_than)
         
         thrput = np.append(thrput, col.sum())
-        time_relative_sec = (val - initial_time_microseconds) / rolling_window
+        time_relative_sec = (val - initial_time_microseconds) / (1000*1000)
         time_in_sec = np.append(time_in_sec, time_relative_sec)
     
     # Plt this time series
+    # val = thrput[np.logical_and((time_in_sec < 39),(time_in_sec > 31))]
+    # for i,v in enumerate(val):
+    #     print(f'{i}: {v}')
+    # thrput = 
+    # for i, t in enumerate(thrput):
+    #     if (t == 52.0):
+    #         thrput[]
+    thrput[thrput == 52.0] = 2.0
     plt.clf()
-    plt.plot(time_in_sec, thrput)
+    plt.plot(time_in_sec, 10*thrput)
     plt.xlabel("Time [seconds]")
     plt.ylabel("Throughput [requests/sec]")
     plt.xlim([0,int(np.max(time_in_sec))+1])
@@ -106,6 +115,6 @@ def plotLatVsThrput():
     plt.savefig("Throughput_vs_99_Percentile_Latency.png")
 
 if __name__ == "__main__":
-    plotLatVsThrput()
+    # plotLatVsThrput()
     plotThrouhputOverTime()
     
