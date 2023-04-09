@@ -102,9 +102,11 @@ def plotLatVsThrput():
 
     # Plotting thrput vs 99 percentile latency
     plt.clf()
-    plt.plot(all_thrput, all_99_quantile_lat, 'b^') # ro=> red dot, bs => blue squares, g^ => green triangles
+    plt.plot(all_thrput, all_99_quantile_lat, 'b^', label='99%ile') # ro=> red dot, bs => blue squares, g^ => green triangles
+    plt.plot(all_thrput, all_median_lat, 'ro', label="median")
+    plt.legend(loc='lower right')
     plt.xlabel("Throughput [requests/sec]")
-    plt.ylabel("99%ile Latency [ms]")
+    plt.ylabel("Latency [ms]")
     plt.xticks(np.arange(0, 3001, step=300))
     plt.yticks(np.arange(0, 67, step=5))
     textstr = f'machine count = {machine_count}\n' + \
